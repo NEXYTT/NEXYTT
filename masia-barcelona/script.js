@@ -149,3 +149,84 @@
     });
   }
 })();
+
+/* =============================================================
+   Fondos: parallax y fotografías reales opcionales
+   ============================================================= */
+(function () {
+  "use strict";
+
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* --- Fotografías reales ------------------------------------
+     Cada escena declara data-photo="img/loquesea.jpg". Si el
+     archivo existe, se superpone a la ilustración; si no existe,
+     no ocurre nada y la ilustración sigue siendo el fondo.
+     Así, para poner fotos de verdad basta con dejarlas en img/
+     con el nombre esperado: no hay que tocar el código.
+     ----------------------------------------------------------- */
+  Array.prototype.forEach.call(
+    document.querySelectorAll("[data-photo]"),
+    function (scene) {
+      var src = scene.getAttribute("data-photo");
+      if (!src) return;
+
+      var probe = new Image();
+      probe.onload = function () {
+        var img = document.createElement("img");
+        img.className = "scene__photo";
+        img.src = src;
+        img.alt = "";
+        img.decoding = "async";
+        img.setAttribute("aria-hidden", "true");
+        scene.appendChild(img);
+        window.requestAnimationFrame(function () {
+          img.classList.add("is-loaded");
+        });
+      };
+      // Si falla (lo normal mientras no haya fotos) no hacemos nada.
+      probe.onerror = function () {};
+      probe.src = src;
+    }
+  );
+
+  /* --- Parallax ----------------------------------------------
+     Las capas de fondo van escaladas un 16%, así que disponemos
+     de un 8% de holgura a cada lado; nunca desplazamos más de un
+     7,5% para que no asome el borde.
+     ----------------------------------------------------------- */
+  var scenes = document.querySelectorAll(".scene[data-parallax]");
+  if (!scenes.length || reduce) return;
+
+  var MAX_SHIFT_RATIO = 0.075;
+
+  function update() {
+    var vh = window.innerHeight;
+    Array.prototype.forEach.call(scenes, function (scene) {
+      var r = scene.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > vh + 200) return;
+
+      var amount = parseFloat(scene.getAttribute("data-parallax")) || 0.5;
+      // -1 cuando la escena entra por abajo, +1 cuando sale por arriba
+      var progress = (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2);
+      progress = Math.max(-1, Math.min(1, progress));
+
+      var shift = -progress * r.height * MAX_SHIFT_RATIO * amount;
+      scene.style.setProperty("--par", shift.toFixed(1) + "px");
+    });
+  }
+
+  var queued = false;
+  function onScroll() {
+    if (queued) return;
+    queued = true;
+    window.requestAnimationFrame(function () {
+      update();
+      queued = false;
+    });
+  }
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  update();
+})();

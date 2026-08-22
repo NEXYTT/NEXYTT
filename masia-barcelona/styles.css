@@ -203,7 +203,9 @@ a:hover { color: var(--terracotta); }
 .hero__art svg { width: 100%; height: 100%; object-fit: cover; }
 .hero::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(20,26,31,.55) 0%, rgba(20,26,31,.12) 42%, rgba(20,26,31,.78) 100%);
+  background:
+    linear-gradient(100deg, rgba(14,19,24,.72) 0%, rgba(14,19,24,.42) 42%, rgba(14,19,24,0) 68%),
+    linear-gradient(180deg, rgba(16,21,26,.62) 0%, rgba(16,21,26,.10) 40%, rgba(16,21,26,.80) 100%);
 }
 .hero__inner { position: relative; z-index: 2; width: min(var(--wrap), 100%); margin-inline: auto; padding-inline: var(--gutter); }
 .hero__eyebrow {
@@ -397,3 +399,99 @@ a:hover { color: var(--terracotta); }
   .facts .v { text-align: left; }
 }
 .facts .v { min-width: 0; overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   FONDOS — escenas, textura y parallax
+   ========================================================================== */
+
+/* --- Contenedor de escena -------------------------------------------------
+   Cada escena apila: ilustración SVG de base + (si existe) fotografía real
+   colocada en img/. La foto la inyecta script.js solo si el archivo carga.
+   -------------------------------------------------------------------------- */
+.scene { position: absolute; inset: 0; overflow: hidden; }
+
+.scene__svg,
+.scene__photo {
+  position: absolute;
+  inset: -1px;                 /* evita costuras de subpíxel al desplazar */
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  object-fit: cover;
+}
+
+/* La fotografía real entra por encima de la ilustración, con un fundido corto */
+.scene__photo { opacity: 0; transition: opacity .6s ease; z-index: 1; }
+.scene__photo.is-loaded { opacity: 1; }
+
+/* El desplazamiento de parallax lo aplica el JS sobre esta variable */
+.scene[data-parallax] .scene__svg,
+.scene[data-parallax] .scene__photo {
+  will-change: transform;
+  transform: translate3d(0, var(--par, 0px), 0) scale(1.16);
+  transform-origin: center 40%;
+}
+
+/* --- Textura de papel / yeso ---------------------------------------------
+   Un grano SVG muy tenue sobre los fondos planos: rompe el color liso y
+   acerca la superficie a un revoco de masía.
+   -------------------------------------------------------------------------- */
+.section { position: relative; }
+.section > .wrap { position: relative; z-index: 1; }
+
+.section--tint::before,
+.section--dark::before {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'>\
+<filter id='t'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/>\
+<feColorMatrix type='saturate' values='0'/></filter>\
+<rect width='180' height='180' filter='url(%23t)'/></svg>");
+  background-size: 180px 180px;
+}
+.section--tint::before { opacity: .05; mix-blend-mode: multiply; }
+.section--dark::before { opacity: .07; mix-blend-mode: overlay; }
+
+/* Degradado suave en los bordes de las secciones tintadas, para que no
+   parezcan bloques de color pegados uno detrás de otro. */
+.section--tint {
+  background-image: linear-gradient(180deg, var(--sand-200) 0%, var(--sand-100) 14%, var(--sand-100) 86%, var(--sand-200) 100%);
+}
+
+/* --- Hero ----------------------------------------------------------------- */
+.hero__art { z-index: 0; }
+.hero::after { z-index: 1; }
+
+/* --- Banda panorámica a sangre -------------------------------------------- */
+.band {
+  position: relative;
+  min-height: min(78svh, 620px);
+  display: flex; align-items: center;
+  padding: clamp(5rem, 12vw, 9rem) 0;
+  overflow: hidden;
+  color: #fff;
+  background: #131a15;
+  isolation: isolate;
+}
+.band__art { z-index: 0; }
+.band::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(ellipse 44% 54% at 50% 44%, rgba(8,12,10,.66) 0%, rgba(8,12,10,.26) 58%, rgba(8,12,10,0) 100%),
+    linear-gradient(180deg, rgba(10,14,11,.42) 0%, rgba(10,14,11,.06) 42%, rgba(10,14,11,.58) 100%);
+}
+.band__inner { position: relative; z-index: 2; }
+.band blockquote { color: #fff; text-shadow: 0 2px 26px rgba(0,0,0,.5); }
+.band cite { color: rgba(255,255,255,.78); }
+
+/* --- Sin animación: se congela el parallax, no el contenido --------------- */
+@media (prefers-reduced-motion: reduce) {
+  .scene[data-parallax] .scene__svg,
+  .scene[data-parallax] .scene__photo { transform: none; }
+  .scene__photo { transition: none; }
+}
+
+/* Las ilustraciones enmarcadas también admiten fotografía real (ver img/) */
+.frame { position: relative; }

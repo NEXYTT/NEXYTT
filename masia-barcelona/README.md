@@ -25,9 +25,10 @@ python3 -m http.server 8000 --directory masia-barcelona
 
 | Archivo      | Contenido                                                        |
 |--------------|------------------------------------------------------------------|
-| `index.html` | Estructura, contenido e ilustraciones SVG en línea. Incluye datos estructurados JSON-LD (`schema.org/Hotel`). |
-| `styles.css` | Sistema de diseño (tokens de color y tipografía), maquetación responsive y componentes. |
-| `script.js`  | Cabecera fija, menú móvil accesible, animación de entrada por secciones y formulario de consulta vía `mailto:`. |
+| `index.html` | Estructura, contenido y escenas SVG en línea. Incluye datos estructurados JSON-LD (`schema.org/Hotel`). |
+| `styles.css` | Sistema de diseño (tokens de color y tipografía), maquetación responsive, componentes y capas de fondo. |
+| `script.js`  | Cabecera fija, menú móvil accesible, animación de entrada, parallax de fondos, carga de fotografías y formulario vía `mailto:`. |
+| `img/`       | Vacía de serie. Ver **Fondos** más abajo y `img/README.md`.       |
 
 ## Secciones de la página
 
@@ -38,15 +39,21 @@ python3 -m http.server 8000 --directory masia-barcelona
 4. **Gastronomía** — restaurante de cocina catalana y española.
 5. **Servicios** — piscina, jardín, terraza, restaurante, WiFi, parking, salón, A/A.
 6. **Eventos** — bodas, eventos de empresa, catas, fiestas privadas, retiros.
-7. **Entorno** — Castell de Burriac, ermita de Santa Elena d'Agell, playas, Barcelona.
-8. **Cómo llegar** — mapa esquemático y distancias.
-9. **Reservas** — datos de contacto y formulario.
+7. **Banda panorámica** — escena a sangre de la era a la hora azul, con parallax.
+8. **Entorno** — Castell de Burriac, ermita de Santa Elena d'Agell, playas, Barcelona.
+9. **Cómo llegar** — mapa esquemático y distancias.
+10. **Reservas** — datos de contacto y formulario.
 
 ## Detalles técnicos
 
 - HTML semántico, español (`lang="es"`), sin frameworks ni recursos externos.
 - Todas las imágenes son **SVG originales dibujados a mano en código**: la página
   funciona sin conexión y no depende de CDNs ni de fotografías de terceros.
+- Los fondos son escenas construidas por capas, con perspectiva atmosférica
+  (la bruma va lavando los planos según se alejan), grano de película mediante
+  `feTurbulence`, desenfoque de primer plano y viñeta. La portada y la banda se
+  desplazan en parallax; las superficies planas llevan una textura de yeso muy
+  tenue para que no queden como bloques de color liso.
 - Accesibilidad: enlace para saltar al contenido, foco visible, `aria-expanded`
   en el menú, `role="img"` con etiquetas en las ilustraciones y respeto por
   `prefers-reduced-motion`.
@@ -65,6 +72,25 @@ python3 -m http.server 8000 --directory masia-barcelona
 | Entrada / salida     | 15:00 h / 12:00 h |
 | Barcelona            | ≈ 27 km (unos 20 min) |
 | Aeropuerto BCN       | ≈ 41 km |
+
+## Fondos: cómo meter fotografías reales
+
+Los fondos son ilustraciones porque el entorno donde se construyó esta página
+tiene bloqueado el acceso a cualquier banco de imágenes, así que no había forma
+de descargar fotos. Para no dejarlo cerrado, cada escena admite una fotografía
+real **sin tocar el código**: basta con dejar el archivo en `img/` con el nombre
+esperado y, al cargar, la foto se superpone a la ilustración.
+
+| Archivo             | Dónde aparece               |
+|---------------------|-----------------------------|
+| `img/hero.jpg`      | Portada                     |
+| `img/era-noche.jpg` | Banda panorámica            |
+| `img/masia-fachada.jpg` | Sección «La masía»      |
+| `img/mesa-jardin.jpg`   | Sección «Gastronomía»   |
+| `img/ceremonia.jpg`     | Sección «Eventos»       |
+
+Si el archivo no está, se ve la ilustración y no pasa nada más. Los detalles
+(proporciones, encuadre, exposición y derechos) están en `img/README.md`.
 
 ## Fuentes
 

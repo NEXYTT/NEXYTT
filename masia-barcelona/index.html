@@ -77,97 +77,290 @@
 
 <!-- ===================== HERO ===================== -->
 <section class="hero" id="inicio">
-  <div class="hero__art" aria-hidden="true">
-    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" role="presentation">
+  <div class="scene hero__art" data-parallax="0.9" data-photo="img/hero.jpg" aria-hidden="true">
+    <svg class="scene__svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="presentation">
       <defs>
-        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#1f2d38"/>
-          <stop offset="45%" stop-color="#4a6673"/>
-          <stop offset="78%" stop-color="#c08e63"/>
-          <stop offset="100%" stop-color="#e0b183"/>
+        <!-- Cielo de hora dorada, del azul cenital al oro del horizonte -->
+        <linearGradient id="h-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#16222e"/>
+          <stop offset="22%"  stop-color="#2c4356"/>
+          <stop offset="42%"  stop-color="#5b7183"/>
+          <stop offset="58%"  stop-color="#9e8f88"/>
+          <stop offset="70%"  stop-color="#d8a173"/>
+          <stop offset="80%"  stop-color="#f0c184"/>
+          <stop offset="100%" stop-color="#f7d9a4"/>
         </linearGradient>
-        <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#e2ae7f"/>
-          <stop offset="100%" stop-color="#5d7581"/>
+
+        <!-- Halo del sol -->
+        <radialGradient id="h-sunglow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#fff3d2" stop-opacity=".95"/>
+          <stop offset="35%"  stop-color="#f8cf92" stop-opacity=".55"/>
+          <stop offset="70%"  stop-color="#e9a869" stop-opacity=".18"/>
+          <stop offset="100%" stop-color="#e9a869" stop-opacity="0"/>
+        </radialGradient>
+
+        <!-- Mar: reflejo cálido arriba, azul profundo abajo -->
+        <linearGradient id="h-sea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#e8bd8b"/>
+          <stop offset="18%"  stop-color="#b49a86"/>
+          <stop offset="55%"  stop-color="#6b8290"/>
+          <stop offset="100%" stop-color="#465f6d"/>
         </linearGradient>
-        <linearGradient id="hillFar" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#55606a"/>
-          <stop offset="100%" stop-color="#3d4750"/>
+
+        <!-- Sierras: cuanto más lejos, más lavadas por la bruma -->
+        <linearGradient id="h-ridge3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#8c9aa6"/><stop offset="100%" stop-color="#75838f"/>
         </linearGradient>
-        <linearGradient id="hillNear" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#3a4038"/>
-          <stop offset="100%" stop-color="#252a24"/>
+        <linearGradient id="h-ridge2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#68757a"/><stop offset="100%" stop-color="#4f5c5e"/>
         </linearGradient>
+        <linearGradient id="h-ridge1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3f4a41"/><stop offset="100%" stop-color="#2b332c"/>
+        </linearGradient>
+        <linearGradient id="h-valley" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#333b2f"/><stop offset="100%" stop-color="#1b2019"/>
+        </linearGradient>
+
+        <!-- Bruma que separa los planos -->
+        <linearGradient id="h-haze" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f0c79a" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#f0c79a" stop-opacity=".5"/>
+        </linearGradient>
+
+        <linearGradient id="h-roof" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7d4a35"/><stop offset="100%" stop-color="#5d3527"/>
+        </linearGradient>
+        <linearGradient id="h-wall" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#c9a883"/><stop offset="55%" stop-color="#e6c79b"/><stop offset="100%" stop-color="#a98a69"/>
+        </linearGradient>
+
+        <!-- Grano fotográfico -->
+        <filter id="h-grain" x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" result="n"/>
+          <feColorMatrix in="n" type="saturate" values="0"/>
+        </filter>
+        <!-- Desenfoque del primer plano (profundidad de campo) -->
+        <filter id="h-dof" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="7"/>
+        </filter>
+        <filter id="h-cloud" x="-60%" y="-200%" width="220%" height="500%">
+          <feGaussianBlur stdDeviation="17"/>
+        </filter>
+        <filter id="h-cloudlow" x="-60%" y="-200%" width="220%" height="500%">
+          <feGaussianBlur stdDeviation="13"/>
+        </filter>
+        <filter id="h-softglow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="14"/>
+        </filter>
+        <clipPath id="h-roofclip"><path d="M684 720 L850 620 L1016 720 Z"/></clipPath>
+        <clipPath id="h-towerclip"><path d="M990 672 L1046 632 L1102 672 Z"/></clipPath>
+        <!-- Viñeta -->
+        <radialGradient id="h-vignette" cx="50%" cy="46%" r="78%">
+          <stop offset="55%" stop-color="#000" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#000" stop-opacity=".55"/>
+        </radialGradient>
       </defs>
 
-      <rect width="1440" height="900" fill="url(#sky)"/>
-      <circle cx="1120" cy="430" r="52" fill="#f2cf9e" opacity=".85"/>
+      <!-- ── CIELO ─────────────────────────────────────────── -->
+      <rect width="1600" height="1000" fill="url(#h-sky)"/>
 
-      <!-- Mar -->
-      <rect x="0" y="452" width="1440" height="120" fill="url(#seaG)"/>
-      <g opacity=".28" fill="#fff">
-        <rect x="1040" y="470" width="170" height="2"/>
-        <rect x="1080" y="486" width="110" height="2"/>
-        <rect x="1020" y="502" width="200" height="2"/>
-        <rect x="1090" y="518" width="90"  height="2"/>
+      <!-- Nubes altas y alargadas -->
+      <g opacity=".5" filter="url(#h-cloud)">
+        <ellipse cx="330" cy="150" rx="230" ry="15" fill="#7d90a0"/>
+        <ellipse cx="430" cy="176" rx="150" ry="10" fill="#8d9fad"/>
+        <ellipse cx="1180" cy="120" rx="270" ry="13" fill="#75899a"/>
+        <ellipse cx="1010" cy="200" rx="180" ry="11" fill="#93a2ae"/>
+        <ellipse cx="760" cy="252" rx="320" ry="12" fill="#b3a79e"/>
+      </g>
+      <!-- Nubes bajas encendidas por el sol -->
+      <g opacity=".7" filter="url(#h-cloudlow)">
+        <ellipse cx="1120" cy="330" rx="260" ry="14" fill="#e8b98a"/>
+        <ellipse cx="900"  cy="360" rx="200" ry="10" fill="#f2caa0"/>
+        <ellipse cx="430"  cy="344" rx="240" ry="12" fill="#dcb08c"/>
       </g>
 
-      <!-- Colina con el Castell de Burriac -->
-      <path d="M0 560 L180 470 L300 512 L430 420 L560 500 L700 452 L860 545 L1030 500 L1200 556 L1440 505 L1440 900 L0 900 Z" fill="url(#hillFar)"/>
-      <g fill="#2f3840">
-        <rect x="404" y="372" width="14" height="50"/>
-        <rect x="418" y="386" width="46" height="36"/>
-        <rect x="464" y="378" width="12" height="44"/>
-        <path d="M400 372h22l-4-12h-14z"/>
+      <!-- Sol y su halo -->
+      <circle cx="1148" cy="392" r="240" fill="url(#h-sunglow)"/>
+      <circle cx="1148" cy="392" r="44" fill="#fff1cf" filter="url(#h-softglow)"/>
+      <circle cx="1148" cy="392" r="30" fill="#fff8e6"/>
+
+      <!-- ── MAR ───────────────────────────────────────────── -->
+      <rect x="0" y="418" width="1600" height="150" fill="url(#h-sea)"/>
+      <!-- Camino de luz del sol sobre el agua -->
+      <g opacity=".55" fill="#ffeccb">
+        <rect x="1120" y="424" width="58"  height="3" rx="1.5"/>
+        <rect x="1104" y="436" width="92"  height="3" rx="1.5"/>
+        <rect x="1122" y="448" width="54"  height="3" rx="1.5"/>
+        <rect x="1092" y="460" width="118" height="3" rx="1.5"/>
+        <rect x="1116" y="472" width="70"  height="3" rx="1.5"/>
+        <rect x="1080" y="486" width="140" height="3" rx="1.5"/>
+        <rect x="1112" y="500" width="80"  height="3" rx="1.5"/>
+        <rect x="1068" y="516" width="164" height="3" rx="1.5"/>
+        <rect x="1104" y="532" width="96"  height="3" rx="1.5"/>
+      </g>
+      <!-- Oleaje suelto -->
+      <g opacity=".2" fill="#e9f0f2">
+        <rect x="180" y="452" width="120" height="2.5" rx="1.2"/>
+        <rect x="420" y="474" width="90"  height="2.5" rx="1.2"/>
+        <rect x="260" y="498" width="150" height="2.5" rx="1.2"/>
+        <rect x="620" y="520" width="110" height="2.5" rx="1.2"/>
+        <rect x="120" y="536" width="180" height="2.5" rx="1.2"/>
+      </g>
+      <!-- Velas lejanas -->
+      <g fill="#fdf3e2" opacity=".75">
+        <path d="M352 452l3-22 12 22z"/>
+        <path d="M486 470l3-18 10 18z"/>
+      </g>
+      <!-- Bruma sobre el mar -->
+      <rect x="0" y="418" width="1600" height="150" fill="url(#h-haze)" opacity=".55"/>
+
+      <!-- ── SIERRA LEJANA (con el castillo) ───────────────── -->
+      <path d="M0 520 L150 452 L268 486 L392 400 L470 438 L560 396 L700 470 L830 430
+               L980 500 L1130 462 L1290 516 L1430 478 L1600 520 L1600 620 L0 620 Z"
+            fill="url(#h-ridge3)" opacity=".92"/>
+      <!-- Castell de Burriac recortado contra el cielo -->
+      <g fill="#6a7683" opacity=".95">
+        <rect x="540" y="356" width="12" height="42"/>
+        <rect x="552" y="368" width="52" height="30"/>
+        <rect x="604" y="360" width="11" height="38"/>
+        <path d="M536 356h20l-3-11h-14z"/>
+        <path d="M600 360h19l-3-10h-13z"/>
+        <path d="M520 398h110l-14 16H534z"/>
+      </g>
+      <rect x="0" y="470" width="1600" height="160" fill="url(#h-haze)" opacity=".42"/>
+
+      <!-- ── SIERRA MEDIA ──────────────────────────────────── -->
+      <path d="M0 600 L190 536 L340 578 L500 512 L660 570 L820 528 L1000 596
+               L1180 552 L1360 604 L1600 560 L1600 720 L0 720 Z"
+            fill="url(#h-ridge2)"/>
+      <!-- Manchas de pinar -->
+      <g fill="#3f4b4a" opacity=".6">
+        <ellipse cx="250" cy="576" rx="70" ry="18"/>
+        <ellipse cx="600" cy="562" rx="90" ry="20"/>
+        <ellipse cx="1080" cy="596" rx="80" ry="18"/>
+        <ellipse cx="1420" cy="600" rx="100" ry="20"/>
+      </g>
+      <rect x="0" y="540" width="1600" height="200" fill="url(#h-haze)" opacity=".26"/>
+
+      <!-- ── LADERA CERCANA ────────────────────────────────── -->
+      <path d="M0 700 L240 648 L470 692 L700 640 L950 700 L1200 656 L1420 706 L1600 664
+               L1600 1000 L0 1000 Z" fill="url(#h-ridge1)"/>
+
+      <!-- Bancales y viñedo, siguiendo la pendiente -->
+      <g stroke="#232a23" stroke-width="2.4" opacity=".55" fill="none">
+        <path d="M40 780 Q260 736 470 772"/>
+        <path d="M20 812 Q250 764 480 802"/>
+        <path d="M0 846  Q240 794 490 834"/>
+        <path d="M1120 760 Q1330 716 1580 752"/>
+        <path d="M1110 792 Q1330 746 1590 784"/>
+      </g>
+      <!-- Cepas -->
+      <g fill="#2a3229">
+        <circle cx="120" cy="776" r="7"/><circle cx="196" cy="768" r="7"/><circle cx="272" cy="762" r="7"/>
+        <circle cx="348" cy="762" r="7"/><circle cx="424" cy="768" r="7"/>
+        <circle cx="100" cy="808" r="7"/><circle cx="180" cy="798" r="7"/><circle cx="260" cy="792" r="7"/>
+        <circle cx="1200" cy="750" r="7"/><circle cx="1280" cy="742" r="7"/><circle cx="1360" cy="738" r="7"/>
       </g>
 
-      <!-- Campos y viñas -->
-      <path d="M0 640 L260 596 L520 636 L780 590 L1080 640 L1440 600 L1440 900 L0 900 Z" fill="url(#hillNear)"/>
-      <g stroke="#1c211c" stroke-width="2" opacity=".55">
-        <path d="M80 700 L360 664"/><path d="M60 726 L380 686"/><path d="M40 752 L400 708"/>
-        <path d="M1060 700 L1400 668"/><path d="M1040 726 L1420 690"/>
-      </g>
+      <!-- ── LA MASÍA ──────────────────────────────────────── -->
+      <g transform="translate(352,92) scale(0.76)">
+        <!-- sombra proyectada -->
+        <ellipse cx="850" cy="906" rx="330" ry="26" fill="#12160f" opacity=".5"/>
 
-      <!-- Cipreses -->
-      <g fill="#1a1f1a">
-        <path d="M300 700c10-70 14-96 18-118 4 22 8 48 18 118z"/>
-        <path d="M348 712c9-62 12-86 16-106 4 20 7 44 16 106z"/>
-        <path d="M1128 706c9-64 12-88 16-108 4 20 7 44 16 108z"/>
-      </g>
-
-      <!-- Masía -->
-      <g>
-        <path d="M600 660 L760 566 L920 660 Z" fill="#20241f"/>
-        <rect x="616" y="656" width="288" height="150" fill="#272b25"/>
-        <rect x="880" y="612" width="86" height="194" fill="#20241f"/>
-        <path d="M872 616 L923 578 L974 616 Z" fill="#191d18"/>
-        <g fill="#f0c98d" opacity=".92">
-          <rect x="656" y="692" width="26" height="34" rx="2"/>
-          <rect x="722" y="692" width="26" height="34" rx="2"/>
-          <rect x="788" y="692" width="26" height="34" rx="2"/>
-          <rect x="854" y="692" width="26" height="34" rx="2"/>
-          <rect x="900" y="660" width="22" height="28" rx="2"/>
-          <path d="M736 806v-52a24 24 0 0 1 48 0v52z"/>
+        <!-- cuerpo principal -->
+        <rect x="700" y="716" width="300" height="180" fill="url(#h-wall)"/>
+        <path d="M684 720 L850 620 L1016 720 Z" fill="url(#h-roof)"/>
+        <!-- hiladas de teja -->
+        <g stroke="#8a5540" stroke-width="2" opacity=".6" clip-path="url(#h-roofclip)">
+          <path d="M712 706 L850 622"/><path d="M746 706 L884 622"/><path d="M780 706 L918 622"/>
+          <path d="M814 706 L952 622"/><path d="M848 706 L986 622"/>
         </g>
-        <rect x="616" y="650" width="350" height="8" fill="#171a15"/>
+        <rect x="684" y="714" width="332" height="10" fill="#4b2b20"/>
+
+        <!-- torre -->
+        <rect x="1000" y="668" width="92" height="228" fill="#cfae86"/>
+        <path d="M990 672 L1046 632 L1102 672 Z" fill="url(#h-roof)"/>
+        <rect x="990" y="668" width="112" height="9" fill="#4b2b20"/>
+
+        <!-- porche de arcos, en sombra -->
+        <rect x="716" y="812" width="268" height="84" fill="#7d6549"/>
+        <g fill="#3a2c20">
+          <path d="M736 896v-42a22 22 0 0 1 44 0v42z"/>
+          <path d="M818 896v-42a22 22 0 0 1 44 0v42z"/>
+          <path d="M900 896v-42a22 22 0 0 1 44 0v42z"/>
+        </g>
+
+        <!-- ventanas encendidas -->
+        <g fill="#ffd894">
+          <rect x="742" y="748" width="26" height="36" rx="2"/>
+          <rect x="824" y="748" width="26" height="36" rx="2"/>
+          <rect x="906" y="748" width="26" height="36" rx="2"/>
+          <rect x="1026" y="716" width="24" height="32" rx="2"/>
+          <rect x="1026" y="792" width="24" height="32" rx="2"/>
+        </g>
+        <!-- resplandor cálido de las ventanas -->
+        <g fill="#ffce80" opacity=".45" filter="url(#h-softglow)">
+          <rect x="736" y="742" width="38" height="48"/>
+          <rect x="818" y="742" width="38" height="48"/>
+          <rect x="900" y="742" width="38" height="48"/>
+          <rect x="1020" y="710" width="36" height="44"/>
+        </g>
+        <!-- sombra en la pared derecha -->
+        <rect x="946" y="716" width="54" height="180" fill="#7a6047" opacity=".38"/>
       </g>
 
-      <!-- Piscina -->
+      <!-- ── PISCINA ───────────────────────────────────────── -->
       <g>
-        <rect x="380" y="782" width="290" height="70" rx="6" fill="#4d7f88" opacity=".85"/>
-        <g fill="#bfe0e2" opacity=".5">
-          <rect x="404" y="802" width="120" height="3" rx="1.5"/>
-          <rect x="452" y="820" width="150" height="3" rx="1.5"/>
-          <rect x="420" y="838" width="90"  height="3" rx="1.5"/>
+        <rect x="300" y="880" width="300" height="86" rx="8" fill="#2f5c66"/>
+        <rect x="308" y="886" width="284" height="74" rx="6" fill="#4e8892"/>
+        <g fill="#cfe9ea" opacity=".45">
+          <rect x="332" y="908" width="120" height="3.5" rx="1.7"/>
+          <rect x="392" y="926" width="150" height="3.5" rx="1.7"/>
+          <rect x="344" y="944" width="90"  height="3.5" rx="1.7"/>
+        </g>
+        <!-- reflejo del cielo en el agua -->
+        <rect x="308" y="886" width="284" height="26" rx="6" fill="#e8bd8b" opacity=".22"/>
+        <!-- tumbonas -->
+        <g fill="#1d221b">
+          <path d="M240 880h44l-6 22h-38z"/><path d="M240 880l-10-16h30l4 16z"/>
+          <path d="M612 880h44l-6 22h-38z"/><path d="M612 880l-10-16h30l4 16z"/>
         </g>
       </g>
 
-      <!-- Olivos en primer plano -->
-      <g fill="#161a16">
-        <circle cx="1250" cy="792" r="66"/><rect x="1244" y="792" width="12" height="70"/>
-        <circle cx="1372" cy="836" r="52"/><rect x="1367" y="836" width="10" height="56"/>
-        <circle cx="160" cy="836" r="58"/><rect x="154" y="836" width="12" height="60"/>
+      <!-- ── ARBOLADO MEDIO ────────────────────────────────── -->
+      <g fill="#1f2a1e">
+        <!-- cipreses -->
+        <path d="M636 856c14-124 19-172 25-210 6 38 11 86 25 210z"/>
+        <path d="M690 872c12-104 16-144 21-176 5 32 9 72 21 176z"/>
+        <path d="M1244 880c13-112 17-156 23-190 6 34 10 78 23 190z"/>
+        <path d="M1292 896c11-92 15-128 19-156 4 28 8 64 19 156z"/>
       </g>
+      <!-- olivos -->
+      <g fill="#2b3626">
+        <circle cx="248" cy="880" r="46"/><circle cx="214" cy="898" r="34"/><circle cx="284" cy="900" r="32"/>
+        <rect x="242" y="880" width="11" height="56" fill="#1a1f16"/>
+        <circle cx="1350" cy="852" r="52"/><circle cx="1308" cy="874" r="38"/><circle cx="1394" cy="874" r="36"/>
+        <rect x="1344" y="852" width="12" height="62" fill="#1a1f16"/>
+      </g>
+
+      <!-- ── VALLE EN SOMBRA ───────────────────────────────── -->
+      <path d="M0 908 Q400 866 800 902 T1600 880 L1600 1000 L0 1000 Z" fill="url(#h-valley)"/>
+
+      <!-- ── PRIMER PLANO DESENFOCADO ──────────────────────── -->
+      <g filter="url(#h-dof)" fill="#10150f">
+        <!-- rama superior izquierda -->
+        <path d="M-40 -20 Q180 60 300 -10 Q220 130 40 120 Z" opacity=".9"/>
+        <!-- masa vegetal inferior -->
+        <path d="M-40 1020 Q120 900 300 960 Q420 900 560 986 Q700 930 860 990
+                 Q1020 936 1180 992 Q1340 940 1500 996 Q1580 966 1640 1010 L1640 1060 L-40 1060 Z"/>
+        <!-- hojas sueltas de encuadre -->
+        <ellipse cx="112" cy="946" rx="66" ry="26" transform="rotate(-22 112 946)"/>
+        <ellipse cx="1496" cy="924" rx="72" ry="28" transform="rotate(18 1496 924)"/>
+      </g>
+
+      <!-- ── ACABADO FOTOGRÁFICO ───────────────────────────── -->
+      <rect width="1600" height="1000" fill="url(#h-vignette)"/>
+      <rect width="1600" height="1000" filter="url(#h-grain)" opacity=".07" style="mix-blend-mode:overlay"/>
     </svg>
   </div>
 
@@ -240,7 +433,7 @@
     </div>
 
     <div class="split__media">
-      <div class="frame">
+      <div class="frame" data-photo="img/masia-fachada.jpg">
         <svg viewBox="0 0 700 560" role="img" aria-label="Ilustración de la fachada de la masía con su porche de arcos, el jardín y los cipreses">
           <defs>
             <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
@@ -453,7 +646,7 @@
 <section class="section" id="gastronomia">
   <div class="wrap split split--reverse reveal">
     <div class="split__media">
-      <div class="frame">
+      <div class="frame" data-photo="img/mesa-jardin.jpg">
         <svg viewBox="0 0 700 520" role="img" aria-label="Mesa puesta bajo el porche, con la piscina al fondo">
           <defs>
             <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
@@ -623,7 +816,7 @@
     </div>
 
     <div class="split__media">
-      <div class="frame">
+      <div class="frame" data-photo="img/ceremonia.jpg">
         <svg viewBox="0 0 700 620" role="img" aria-label="Ceremonia al aire libre en el jardín de la masía">
           <defs>
             <linearGradient id="ev" x1="0" y1="0" x2="0" y2="1">
@@ -677,9 +870,130 @@
   </div>
 </section>
 
-<!-- ===================== CITA ===================== -->
-<section class="section section--tint">
-  <div class="wrap quote reveal">
+<!-- ===================== BANDA PANORÁMICA ===================== -->
+<section class="band" aria-label="La era al anochecer">
+  <div class="scene band__art" data-parallax="0.7" data-photo="img/era-noche.jpg" aria-hidden="true">
+      <svg class="scene__svg" viewBox="0 0 2000 800" preserveAspectRatio="xMidYMid slice" role="presentation">
+        <defs>
+          <linearGradient id="b-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#0d1622"/>
+            <stop offset="22%"  stop-color="#15263a"/>
+            <stop offset="40%"  stop-color="#223c58"/>
+            <stop offset="52%"  stop-color="#485a74"/>
+            <stop offset="62%"  stop-color="#8f6c68"/>
+            <stop offset="72%"  stop-color="#c68c6e"/>
+            <stop offset="100%" stop-color="#dda078"/>
+          </linearGradient>
+
+          <!-- Rescoldo del sol ya puesto, sobre el horizonte -->
+          <radialGradient id="b-afterglow" cx="50%" cy="62%" r="56%">
+            <stop offset="0%"   stop-color="#ffc189" stop-opacity=".72"/>
+            <stop offset="38%"  stop-color="#ef9a63" stop-opacity=".34"/>
+            <stop offset="100%" stop-color="#e08b5c" stop-opacity="0"/>
+          </radialGradient>
+
+          <linearGradient id="b-far" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#4a4f60"/><stop offset="100%" stop-color="#38404f"/>
+          </linearGradient>
+          <linearGradient id="b-mid" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#28322f"/><stop offset="100%" stop-color="#1b2320"/>
+          </linearGradient>
+          <linearGradient id="b-near" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#141b16"/><stop offset="100%" stop-color="#0a0e0b"/>
+          </linearGradient>
+
+          <radialGradient id="b-lamp" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stop-color="#ffdca0" stop-opacity=".9"/>
+            <stop offset="40%"  stop-color="#ffc87f" stop-opacity=".3"/>
+            <stop offset="100%" stop-color="#ffc87f" stop-opacity="0"/>
+          </radialGradient>
+
+          <filter id="b-cloud" x="-60%" y="-400%" width="220%" height="900%">
+            <feGaussianBlur stdDeviation="16"/>
+          </filter>
+          <filter id="b-dof" x="-20%" y="-30%" width="140%" height="160%">
+            <feGaussianBlur stdDeviation="9"/>
+          </filter>
+          <filter id="b-grain" x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/>
+            <feColorMatrix type="saturate" values="0"/>
+          </filter>
+          <radialGradient id="b-vig" cx="50%" cy="45%" r="82%">
+            <stop offset="48%" stop-color="#000" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#000" stop-opacity=".62"/>
+          </radialGradient>
+        </defs>
+
+        <!-- Cielo -->
+        <rect width="2000" height="800" fill="url(#b-sky)"/>
+
+        <!-- Estrellas tempranas -->
+        <g fill="#fdf6e6">
+          <circle cx="300"  cy="96"  r="1.9" opacity=".85"/><circle cx="524"  cy="60"  r="1.4" opacity=".6"/>
+          <circle cx="764"  cy="118" r="1.6" opacity=".7"/> <circle cx="1184" cy="72"  r="1.5" opacity=".65"/>
+          <circle cx="1482" cy="112" r="1.8" opacity=".8"/> <circle cx="1724" cy="56"  r="1.3" opacity=".55"/>
+          <circle cx="180"  cy="168" r="1.3" opacity=".5"/> <circle cx="980"  cy="44"  r="1.5" opacity=".6"/>
+          <circle cx="1340" cy="152" r="1.2" opacity=".45"/><circle cx="620"  cy="196" r="1.2" opacity=".4"/>
+        </g>
+
+        <!-- Rescoldo tras las montañas -->
+        <ellipse cx="1000" cy="496" rx="1200" ry="260" fill="url(#b-afterglow)"/>
+
+        <!-- Nubes largas y difusas -->
+        <g opacity=".42" filter="url(#b-cloud)">
+          <ellipse cx="1420" cy="308" rx="420" ry="12" fill="#8a7a86"/>
+          <ellipse cx="560"  cy="272" rx="360" ry="10" fill="#7a6d80"/>
+          <ellipse cx="1080" cy="380" rx="480" ry="11" fill="#a98276"/>
+        </g>
+
+        <!-- Sierra lejana -->
+        <path d="M0 486 L210 430 L420 472 L640 418 L880 470 L1120 424 L1360 476 L1600 428 L1820 470 L2000 440
+                 L2000 560 L0 560 Z" fill="url(#b-far)" opacity=".85"/>
+        <!-- Sierra media -->
+        <path d="M0 552 L260 500 L520 546 L800 494 L1080 550 L1360 502 L1660 552 L2000 508
+                 L2000 660 L0 660 Z" fill="url(#b-mid)"/>
+        <!-- Ladera cercana -->
+        <path d="M0 636 L300 596 L620 640 L940 594 L1280 642 L1600 598 L2000 644 L2000 800 L0 800 Z" fill="url(#b-near)"/>
+
+        <!-- Cipreses recortados contra el rescoldo -->
+        <g fill="#0c110d">
+          <path d="M168 616c11-98 15-136 20-166 5 30 9 68 20 166z"/>
+          <path d="M232 630c9-82 12-114 16-140 4 26 7 58 16 140z"/>
+          <path d="M1782 620c10-92 13-128 18-156 5 28 8 64 18 156z"/>
+          <path d="M1848 634c8-76 11-106 15-130 4 24 7 54 15 130z"/>
+        </g>
+
+        <!-- Guirnaldas de bombillas sobre la era -->
+        <g stroke="#7f6b50" stroke-width="4" fill="none" opacity=".5">
+          <path d="M120 800V520"/><path d="M1880 800V520"/>
+        </g>
+        <path d="M120 528 Q560 646 1000 536 Q1440 646 1880 528" stroke="#c9b593" stroke-width="2" fill="none" opacity=".4"/>
+        <g fill="url(#b-lamp)" opacity=".85">
+          <circle cx="236" cy="566" r="26"/><circle cx="360" cy="596" r="26"/><circle cx="486" cy="616" r="26"/>
+          <circle cx="620" cy="622" r="26"/><circle cx="752" cy="612" r="26"/><circle cx="880" cy="584" r="26"/>
+          <circle cx="1122" cy="584" r="26"/><circle cx="1250" cy="612" r="26"/><circle cx="1382" cy="622" r="26"/>
+          <circle cx="1516" cy="616" r="26"/><circle cx="1642" cy="596" r="26"/><circle cx="1766" cy="566" r="26"/>
+        </g>
+        <g fill="#ffe4ad" opacity=".9">
+          <circle cx="236" cy="566" r="4.5"/><circle cx="360" cy="596" r="4.5"/><circle cx="486" cy="616" r="4.5"/>
+          <circle cx="620" cy="622" r="4.5"/><circle cx="752" cy="612" r="4.5"/><circle cx="880" cy="584" r="4.5"/>
+          <circle cx="1122" cy="584" r="4.5"/><circle cx="1250" cy="612" r="4.5"/><circle cx="1382" cy="622" r="4.5"/>
+          <circle cx="1516" cy="616" r="4.5"/><circle cx="1642" cy="596" r="4.5"/><circle cx="1766" cy="566" r="4.5"/>
+        </g>
+
+        <!-- Primer plano desenfocado: olivos que enmarcan -->
+        <g filter="url(#b-dof)" fill="#070a07">
+          <path d="M-40 828 Q220 716 500 792 Q760 714 1020 800 Q1300 720 1560 796 Q1800 726 2040 806
+                   L2040 880 L-40 880 Z"/>
+          <ellipse cx="96"  cy="742" rx="104" ry="40" transform="rotate(-16 96 742)"/>
+          <ellipse cx="1918" cy="728" rx="110" ry="42" transform="rotate(14 1918 728)"/>
+        </g>
+
+        <rect width="2000" height="800" fill="url(#b-vig)"/>
+        <rect width="2000" height="800" filter="url(#b-grain)" opacity=".075" style="mix-blend-mode:overlay"/>
+      </svg>
+  </div>
+  <div class="band__inner wrap quote reveal">
     <blockquote>
       «Un sitio tranquilo para desconectar, con un personal que está pendiente de todo
       sin que se le note.»
