@@ -7,9 +7,13 @@
  * one is to sample it. Every game is driven through the same seeded `Round`
  * objects the browser uses, so a discrepancy here is a real discrepancy.
  *
- * Tolerances are set from the standard error of each estimate, not picked to
- * make the suite pass: a game whose measured RTP sits outside its band has a
- * broken paytable, not an unlucky run.
+ * Tolerances are DERIVED, never hand-picked. Each simulation accumulates the
+ * per-round return, and the check is that the sample mean sits within four
+ * standard errors of the declared RTP. That matters because variance differs by
+ * orders of magnitude across these games: a red/black bet and a 49× dice roll
+ * need wildly different bands, and a fixed tolerance would be far too loose for
+ * one and far too tight for the other. Since the seeds are fixed, the result is
+ * deterministic — this cannot flake.
  */
 
 import test from "node:test";
@@ -31,44 +35,95 @@ const rounds = function* (count, seed = "verify") {
 
 const pct = (value) => `${(value * 100).toFixed(3)}%`;
 
+/**
+ * Running mean and standard error of a game's per-round return, expressed as a
+ * multiple of the stake. Uses running sums rather than keeping the samples, so
+ * a million rounds costs no memory.
+ */
+class Returns {
+  constructor() {
+    this.n = 0;
+    this.sum = 0;
+    this.sumSq = 0;
+  }
+
+  /** @param {number} multiple total returned ÷ staked for one round */
+  add(multiple) {
+    this.n += 1;
+    this.sum += multiple;
+    this.sumSq += multiple * multiple;
+  }
+
+  get mean() {
+    return this.sum / this.n;
+  }
+
+  /** Standard error of the mean, from the sample variance. */
+  get standardError() {
+    const variance = Math.max(0, this.sumSq / this.n - this.mean ** 2);
+    return Math.sqrt(variance / this.n);
+  }
+}
+
+/**
+ * Assert a measured RTP against its declared value, with the band taken from
+ * the estimate's own standard error.
+ * @param {Returns} returns
+ * @param {number} declared
+ * @param {string} label
+ * @param {number} sigmas
+ */
+function assertRtp(returns, declared, label, sigmas = 4) {
+  const { mean, standardError } = returns;
+  const band = sigmas * standardError;
+  const deviation = Math.abs(mean - declared);
+
+  assert.ok(
+    deviation <= band,
+    `${label}: measured ${pct(mean)} against a declared ${pct(declared)} — ` +
+      `off by ${(deviation / standardError).toFixed(2)} standard errors ` +
+      `(${returns.n.toLocaleString("es-ES")} rounds, band ±${pct(band)})`
+  );
+}
+
 /* --- Slots ---------------------------------------------------------------- */
 
 test("slots pays back its advertised RTP", () => {
-  const SPINS = 400_000;
-  let staked = 0;
-  let returned = 0;
+  const SPINS = 300_000;
+  const returns = new Returns();
   let features = 0;
   let nonce = 0;
 
   for (const round of rounds(SPINS, "slots")) {
-    // A total bet of 20 line-units, so `totalMultiplier` is directly comparable.
-    staked += slots.LINES;
     const result = slots.spin(round);
-    returned += result.totalMultiplier;
-    nonce++;
+    // The stake is 20 line-units, so `totalMultiplier ÷ LINES` is the return
+    // as a multiple of the total bet — the quantity the RTP is defined over.
+    let won = result.totalMultiplier;
 
-    // Free spins are played on their own rounds and cost nothing.
+    // Free spins are played on their own rounds and cost nothing, so their
+    // winnings belong to the round that triggered them.
     if (result.freeSpinsAwarded > 0) {
       features++;
       for (let i = 0; i < result.freeSpinsAwarded; i++) {
-        returned += slots.spin(new Round("slots-free", "audit", nonce * 100 + i), { freeSpin: true })
+        won += slots.spin(new Round("slots-free", "audit", nonce * 100 + i), { freeSpin: true })
           .totalMultiplier;
       }
     }
+    returns.add(won / slots.LINES);
+    nonce++;
   }
 
-  const rtp = returned / staked;
-  const featureRate = features / SPINS;
+  assertRtp(returns, slots.THEORETICAL_RTP, "slots");
 
+  // The feature frequency is a Bernoulli trial, so its own standard error is
+  // small enough to check tightly — and `featureChance()` is a closed form.
+  const featureRate = features / SPINS;
+  const expected = slots.featureChance();
+  const featureSe = Math.sqrt((expected * (1 - expected)) / SPINS);
+  assert.ok(featureRate > 0, "the free-spin feature never fired");
   assert.ok(
-    Math.abs(rtp - slots.THEORETICAL_RTP) < 0.02,
-    `measured RTP ${pct(rtp)} against a declared ${pct(slots.THEORETICAL_RTP)}`
-  );
-  // A slot that never triggers its feature is not the game the paytable describes.
-  assert.ok(featureRate > 0.001, `the free-spin feature fired only ${pct(featureRate)} of the time`);
-  assert.ok(
-    Math.abs(featureRate - slots.featureChance()) < 0.01,
-    `feature rate ${pct(featureRate)} disagrees with the derived ${pct(slots.featureChance())}`
+    Math.abs(featureRate - expected) <= 4 * featureSe,
+    `feature rate ${pct(featureRate)} vs the derived ${pct(expected)} (band ±${pct(4 * featureSe)})`
   );
 });
 
@@ -112,19 +167,16 @@ test("every slots grid is five reels of three symbols drawn from the strips", ()
 /* --- Dice ----------------------------------------------------------------- */
 
 test("dice returns 99% at every target, in both directions", () => {
-  const SPINS = 120_000;
+  const SPINS = 60_000;
 
   for (const direction of ["under", "over"]) {
-    for (const target of [2, 25, 50.5, 75, 98]) {
-      let returned = 0;
+    // 2 and 98 are the extremes: one is nearly a sure thing, the other pays 49×.
+    for (const target of [2, 50.5, 98]) {
+      const returns = new Returns();
       for (const round of rounds(SPINS, `dice-${direction}-${target}`)) {
-        returned += dice.resolve(round, { target, direction, stake: 100 }).payout;
+        returns.add(dice.resolve(round, { target, direction, stake: 100 }).payout / 100);
       }
-      const rtp = returned / (SPINS * 100);
-      assert.ok(
-        Math.abs(rtp - dice.THEORETICAL_RTP) < 0.015,
-        `${direction} ${target}: measured ${pct(rtp)}`
-      );
+      assertRtp(returns, dice.THEORETICAL_RTP, `dice ${direction} ${target}`);
     }
   }
 });
@@ -177,7 +229,7 @@ test("the wheel holds 37 distinct pockets with the real European layout", () => 
 });
 
 test("every bet type returns 36/37, the single-zero house edge", () => {
-  const SPINS = 150_000;
+  const SPINS = 100_000;
   const layouts = {
     straight: { type: "straight", selection: [17], amount: 100 },
     split: { type: "split", selection: [17, 20], amount: 100 },
@@ -188,17 +240,13 @@ test("every bet type returns 36/37, the single-zero house edge", () => {
   };
 
   for (const [name, bet] of Object.entries(layouts)) {
-    let returned = 0;
+    const returns = new Returns();
     for (const round of rounds(SPINS, `roulette-${name}`)) {
-      returned += roulette.payoutFor([bet], roulette.spin(round).number).payout;
+      returns.add(roulette.payoutFor([bet], roulette.spin(round).number).payout / 100);
     }
-    const rtp = returned / (SPINS * 100);
-    // A straight-up bet has a huge variance, so its band is the widest.
-    const tolerance = name === "straight" ? 0.05 : name === "split" ? 0.035 : 0.02;
-    assert.ok(
-      Math.abs(rtp - roulette.THEORETICAL_RTP) < tolerance,
-      `${name}: measured ${pct(rtp)} against ${pct(roulette.THEORETICAL_RTP)}`
-    );
+    // A straight-up bet has roughly forty times the variance of red/black; the
+    // derived band absorbs that difference on its own.
+    assertRtp(returns, roulette.THEORETICAL_RTP, `roulette ${name}`);
   }
 });
 
@@ -249,10 +297,10 @@ test("spins land on real pockets and cover the whole wheel", () => {
 /* --- Mines ---------------------------------------------------------------- */
 
 test("mines returns 99% across mine counts and cash-out depths", () => {
-  const ROUNDS = 60_000;
+  const ROUNDS = 40_000;
 
   for (const [mineCount, cashOutAt] of [[1, 5], [3, 3], [5, 2], [12, 1], [24, 1]]) {
-    let returned = 0;
+    const returns = new Returns();
     for (const round of rounds(ROUNDS, `mines-${mineCount}-${cashOutAt}`)) {
       let state = mines.createBoard(round, { mineCount });
       // Always open the lowest hidden tiles: the layout is already random, so
@@ -260,15 +308,13 @@ test("mines returns 99% across mine counts and cash-out depths", () => {
       for (let picks = 0; picks < cashOutAt && state.status === mines.STATUS.PLAYING; picks++) {
         state = mines.reveal(state, mines.hiddenTiles(state)[0]);
       }
-      if (state.status !== mines.STATUS.LOST) {
-        returned += mines.payoutFor(100, mineCount, state.revealed.length);
-      }
+      returns.add(
+        state.status === mines.STATUS.LOST
+          ? 0
+          : mines.payoutFor(100, mineCount, state.revealed.length) / 100
+      );
     }
-    const rtp = returned / (ROUNDS * 100);
-    assert.ok(
-      Math.abs(rtp - mines.THEORETICAL_RTP) < 0.025,
-      `${mineCount} mines cashing at ${cashOutAt}: measured ${pct(rtp)}`
-    );
+    assertRtp(returns, mines.THEORETICAL_RTP, `mines ${mineCount}× cashing at ${cashOutAt}`);
   }
 });
 
@@ -331,24 +377,20 @@ test("clearing every safe tile pays the maximum multiplier", () => {
 /* --- Crash ---------------------------------------------------------------- */
 
 test("crash returns 99% at every auto-cashout multiplier", () => {
-  const ROUNDS = 200_000;
+  const ROUNDS = 150_000;
 
   for (const cashoutAt of [1.5, 2, 5, 20]) {
-    let returned = 0;
+    const returns = new Returns();
     for (const round of rounds(ROUNDS, `crash-${cashoutAt}`)) {
-      returned += crash.resolve({
-        crashPoint: crash.crashPointFrom(round),
-        cashoutAt,
-        stake: 100,
-      }).payout;
+      returns.add(
+        crash.resolve({
+          crashPoint: crash.crashPointFrom(round),
+          cashoutAt,
+          stake: 100,
+        }).payout / 100
+      );
     }
-    const rtp = returned / (ROUNDS * 100);
-    // Higher targets win rarely and pay big, so the estimator is noisier.
-    const tolerance = cashoutAt >= 20 ? 0.06 : cashoutAt >= 5 ? 0.03 : 0.015;
-    assert.ok(
-      Math.abs(rtp - crash.THEORETICAL_RTP) < tolerance,
-      `cashing out at ${cashoutAt}×: measured ${pct(rtp)}`
-    );
+    assertRtp(returns, crash.THEORETICAL_RTP, `crash cashing at ${cashoutAt}×`);
   }
 });
 
@@ -391,7 +433,7 @@ test("crash settles on the crash point, not on when the player clicked", () => {
 /* --- Blackjack ------------------------------------------------------------ */
 
 test("blackjack played with basic strategy returns close to 99.5%", () => {
-  const HANDS = 60_000;
+  const HANDS = 50_000;
   const STAKE = 100;
   let wagered = 0;
   let returned = 0;

@@ -531,7 +531,9 @@ function reviewsSection(product) {
     ]);
   }
 
-  const breakdown = el("div", { style: { display: "grid", gap: "var(--space-2)" } },
+  const breakdown = el("div", {
+    style: { display: "grid", gap: "var(--space-2)", flex: "1 1 17rem", minWidth: "0" },
+  },
     summary.distribution.map((row) =>
       el("div.row", { style: { gap: "var(--space-3)" } }, [
         el("span.text-xs.muted", { style: { flex: "none", width: "4.5rem" } },
@@ -547,15 +549,18 @@ function reviewsSection(product) {
     )
   );
 
+  // Flex rather than a two-column grid: the storefront ships no media query for
+  // this block, and wrapping on flex-basis lets the breakdown drop below the
+  // average on a phone instead of squeezing the bars past their min-width.
   const summaryCard = el("div.card.card--pad", {
     style: {
-      display: "grid",
+      display: "flex",
+      flexWrap: "wrap",
       gap: "var(--space-5)",
-      gridTemplateColumns: "minmax(0, 180px) minmax(0, 1fr)",
       alignItems: "center",
     },
   }, [
-    el("div", {}, [
+    el("div", { style: { flex: "0 1 auto", minWidth: "9rem" } }, [
       el("div", {
         style: {
           fontFamily: "var(--font-display)",
