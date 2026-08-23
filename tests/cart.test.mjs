@@ -56,6 +56,35 @@ test("setting a quantity to zero or below removes the line", () => {
   assert.equal(cart.isEmpty, true);
 });
 
+test("setQty refuses a quantity that is not a finite number", () => {
+  const cart = fresh();
+  cart.add(ITEM, 3);
+  const key = cart.lines[0].key;
+
+  // NaN <= 0 is false, so without an explicit guard NaN would be stored as the
+  // quantity and every total would follow it — and be persisted that way.
+  for (const value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, "abc", {}]) {
+    assert.throws(() => cart.setQty(key, value), RangeError, `setQty accepted ${String(value)}`);
+  }
+
+  const totals = cart.totals();
+  assert.equal(cart.lines[0].qty, 3, "the quantity must be untouched after a refusal");
+  assert.ok(Number.isInteger(totals.total) && totals.total > 0);
+  assert.equal(totals.net + totals.tax, totals.total);
+});
+
+test("setQty accepts numeric strings and truncates fractions", () => {
+  const cart = fresh();
+  cart.add(ITEM, 1);
+  const key = cart.lines[0].key;
+
+  cart.setQty(key, "4");
+  assert.equal(cart.lines[0].qty, 4);
+
+  cart.setQty(key, 2.9);
+  assert.equal(cart.lines[0].qty, 2, "a fractional quantity truncates rather than rounding up");
+});
+
 test("setQty on an unknown key is a no-op, not a crash", () => {
   const cart = fresh();
   cart.add(ITEM, 1);

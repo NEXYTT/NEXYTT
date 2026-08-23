@@ -19,10 +19,32 @@ export { store };
 const ORDERS_KEY = "orders";
 const MAX_ORDERS = 100;
 
-/** @returns {object[]} newest first */
+/**
+ * An order record is usable only if it carries the fields every screen reads.
+ * The storage adapter already drops unparseable JSON; this is the same
+ * containment one level up, for JSON that parses but has the wrong shape —
+ * a record written by an older schema, or one that was only half written.
+ * Without it a single bad record throws inside the `.map()` that builds the
+ * list and takes every other order down with it.
+ */
+const isUsableOrder = (order) =>
+  Boolean(order) &&
+  typeof order.reference === "string" &&
+  Array.isArray(order.lines) &&
+  order.totals != null &&
+  Number.isFinite(order.totals.total) &&
+  Number.isFinite(order.createdAt);
+
+/** @returns {object[]} newest first, malformed records dropped */
 export function listOrders() {
   const saved = store.get(ORDERS_KEY);
-  return Array.isArray(saved) ? saved : [];
+  if (!Array.isArray(saved)) return [];
+
+  const usable = saved.filter(isUsableOrder);
+  if (usable.length !== saved.length) {
+    console.warn(`[orders] se descartaron ${saved.length - usable.length} pedidos con formato no válido`);
+  }
+  return usable;
 }
 
 export function saveOrder(order) {

@@ -98,13 +98,27 @@ export class Cart extends Emitter {
     return this.totals();
   }
 
-  /** Set an absolute quantity; 0 removes the line. */
+  /**
+   * Set an absolute quantity; zero or less removes the line.
+   *
+   * The validation matters as much as the assignment. `NaN <= 0` is false, so
+   * an unvalidated NaN would sail past the removal branch, `Math.floor(NaN)`
+   * would store NaN as the quantity, and every total downstream would become
+   * NaN — and then be written to storage, so the cart would stay broken across
+   * reloads. `add()` already rejects a non-integer quantity; this is the same
+   * contract, enforced in the same place rather than left to each caller.
+   */
   setQty(key, qty) {
     const line = this.lines.find((l) => l.key === key);
     if (!line) return this.totals();
 
-    if (qty <= 0) return this.remove(key);
-    line.qty = Math.min(MAX_QTY, Math.floor(qty));
+    const wanted = Number(qty);
+    if (!Number.isFinite(wanted)) {
+      throw new RangeError(`qty must be a finite number, got ${qty}`);
+    }
+
+    if (wanted <= 0) return this.remove(key);
+    line.qty = Math.min(MAX_QTY, Math.floor(wanted));
     this._commit("qty", key);
     return this.totals();
   }

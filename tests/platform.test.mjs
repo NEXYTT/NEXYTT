@@ -9,7 +9,7 @@ import { createMemoryStore, createStore } from "../assets/js/storage.js";
 import { Emitter } from "../assets/js/emitter.js";
 import {
   money, credits, compact, percent, multiplier,
-  dateTime, dateOnly, duration, relative, shortHash,
+  dateTime, dateOnly, duration, relative, shortHash, NO_DATE,
 } from "../assets/js/format.js";
 
 test("the memory store round-trips values", () => {
@@ -93,6 +93,22 @@ test("date formatters produce a Spanish rendering", () => {
   assert.ok(dateTime(ts).length > 8);
   assert.ok(dateOnly(ts).length > 5);
   assert.ok(!dateOnly(ts).includes("Invalid"));
+});
+
+test("date formatters degrade on a missing or malformed timestamp", () => {
+  // Intl throws RangeError on an invalid date. These formatters run inside the
+  // .map() that builds a whole list, so one bad record must not abort the
+  // render of every row beside it.
+  for (const value of [undefined, null, Number.NaN, "no es una fecha", {}, Number.POSITIVE_INFINITY]) {
+    assert.equal(dateTime(value), NO_DATE, `dateTime(${String(value)}) should degrade`);
+    assert.equal(dateOnly(value), NO_DATE, `dateOnly(${String(value)}) should degrade`);
+    assert.equal(relative(value), NO_DATE, `relative(${String(value)}) should degrade`);
+  }
+
+  // A real timestamp still formats.
+  const ts = Date.UTC(2026, 2, 15, 10, 30);
+  assert.notEqual(dateTime(ts), NO_DATE);
+  assert.notEqual(dateOnly(ts), NO_DATE);
 });
 
 test("relative time reads naturally in both directions", () => {

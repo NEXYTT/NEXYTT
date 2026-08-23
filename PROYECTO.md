@@ -151,6 +151,7 @@ clic. La animación representa un resultado ya fijado, nunca al revés.
 | `npm run test:e2e` | Flujo de compra completo | ✅ 26/26 |
 | `node tests/casino-e2e.mjs` | Una ronda real en cada juego | ✅ 44/44 |
 | `node tests/contrast.mjs` | Contraste WCAG AA de los tokens | ✅ 139/139 |
+| `node tests/robustness.mjs` | Entradas hostiles y estado corrupto | ✅ 44/44 |
 
 Lo que cubren las pruebas de navegador y no puede cubrir ninguna prueba por
 página: que el total que se le cita al cliente en el checkout sea **el mismo**
@@ -175,6 +176,13 @@ Errores reales que encontraron estas pruebas durante el desarrollo:
   desbordamiento de 388 px a 768 px: a 390 px una regla `.hide-sm` escondía el
   elemento que desbordaba. Ahora mide a 360, 390, 768 y 1024 px y nombra el
   elemento culpable.
+- `cart.setQty(key, NaN)` corrompía el carrito entero: `NaN <= 0` es falso, así
+  que el valor pasaba la guardia de eliminación y se persistía, dejando el
+  carrito roto incluso tras recargar.
+- Un pedido sin fecha lanzaba `RangeError` dentro del `.map()` que construye la
+  lista, tumbando el renderizado de **todos** los demás pedidos. Y `new Date(null)`
+  es el epoch, así que un campo ausente se habría mostrado como «1 ene 1970»:
+  una fecha falsa con aplomo es peor que un guion honesto.
 
 ## Estructura
 

@@ -66,8 +66,32 @@ export function multiplier(value, decimals = 2) {
   return `${value.toFixed(decimals)}×`;
 }
 
+/**
+ * Placeholder for a timestamp that cannot be rendered.
+ * `Intl.DateTimeFormat#format` throws `RangeError: Invalid time value` on a
+ * missing or malformed date, and these formatters run inside `.map()` calls
+ * that build whole lists — so one bad record would abort the render of every
+ * row around it, not just its own. A record written by an older schema, or a
+ * partially-written one, is exactly the case that must degrade rather than
+ * take the page down with it.
+ */
+export const NO_DATE = "—";
+
+/**
+ * True when `ts` can actually be formatted as a date.
+ *
+ * `null` and `""` are rejected explicitly, before `new Date()` sees them:
+ * `new Date(null)` is the epoch, so a missing field would otherwise render as
+ * "1 ene 1970" — a confidently wrong date, which is worse than no date at all.
+ */
+const isRenderableDate = (ts) => {
+  if (ts === null || ts === undefined || ts === "") return false;
+  return !Number.isNaN(new Date(ts).getTime());
+};
+
 /** @param {number} ts epoch ms */
 export function dateTime(ts, { locale = DEFAULT_LOCALE } = {}) {
+  if (!isRenderableDate(ts)) return NO_DATE;
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -76,6 +100,7 @@ export function dateTime(ts, { locale = DEFAULT_LOCALE } = {}) {
 
 /** @param {number} ts epoch ms */
 export function dateOnly(ts, { locale = DEFAULT_LOCALE } = {}) {
+  if (!isRenderableDate(ts)) return NO_DATE;
   return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(ts));
 }
 
@@ -91,6 +116,7 @@ export function duration(ms) {
 
 /** "hace 5 min" style relative time. */
 export function relative(ts, { locale = DEFAULT_LOCALE, now = Date.now() } = {}) {
+  if (!isRenderableDate(ts)) return NO_DATE;
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   const diff = ts - now;
   const units = [
