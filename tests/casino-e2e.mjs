@@ -63,6 +63,29 @@ const readWallet = (page) =>
     return raw ? JSON.parse(raw) : { balance: opening, ledger: [] };
   }, OPENING_BALANCE);
 
+/** A bet is settled once a payout or an adjustment references it. */
+const isSettled = (ledger, bet) =>
+  ledger.some((e) => e.ref === bet.id) ||
+  // A losing round settles at zero and writes no payout entry, so the round is
+  // also finished once a later entry exists for the same game.
+  ledger.some((e) => e.at > bet.at && e.game === bet.game);
+
+/**
+ * Poll the page's own wallet until `predicate` holds. Returns the ledger it
+ * settled on, or the last one seen if the deadline passes — the caller's
+ * assertions then report what actually happened rather than a timeout.
+ */
+async function waitForLedger(page, predicate, timeoutMs) {
+  const deadline = Date.now() + timeoutMs;
+  let ledger = [];
+  while (Date.now() < deadline) {
+    ledger = (await readWallet(page)).ledger;
+    if (predicate(ledger)) return ledger;
+    await page.waitForTimeout(250);
+  }
+  return ledger;
+}
+
 const server = await startServer();
 const browser = await chromium.launch();
 
@@ -113,26 +136,46 @@ for (const game of GAMES) {
 
     if (found && await action.isEnabled()) {
       await action.click();
-      // Reels, wheels and curves animate; give the round time to resolve.
-      await page.waitForTimeout(3500);
+      // Reels, wheels and curves animate for different lengths of time, and a
+      // crash round runs until its own crash point. Waiting a fixed number of
+      // milliseconds is a guess about all of that, and a guess that is right
+      // most of the time is exactly what a flaky test is made of. Wait for the
+      // condition instead: the stake reaching the ledger.
+      await waitForLedger(page, (ledger) => ledger.some((e) => e.kind === "bet"), 12_000);
 
       // Multi-stage games need a second interaction to settle the round.
       if (game.id === "mines") {
         const tiles = page.locator(".stage button:not([disabled])");
         if (await tiles.count() > 0) {
           await tiles.first().click();
-          await page.waitForTimeout(800);
+          await page.waitForTimeout(900);
         }
       }
       if (game.id === "blackjack") {
         const stand = page.locator("button", { hasText: /plantar|stand/i }).first();
-        if (await stand.count() && await stand.isEnabled()) {
-          await stand.click();
-          await page.waitForTimeout(2500);
+        // The deal animates before the player may act, so wait for the button
+        // to become enabled rather than assuming it already is.
+        if (await stand.count()) {
+          await stand.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+          if (await stand.isEnabled()) {
+            await stand.click();
+            await waitForLedger(
+              page,
+              (ledger) => ledger.some((e) => e.kind === "bet" && isSettled(ledger, e)),
+              20_000
+            );
+          }
         }
       }
       if (game.id === "crash") {
-        await page.waitForTimeout(9000); // let the round run to its crash
+        // The round ends when the bet is settled, whenever that is: a crash
+        // point of 1.02x resolves in under a second, one of 30x takes far
+        // longer than any fixed wait would allow for.
+        await waitForLedger(
+          page,
+          (ledger) => ledger.some((e) => e.kind === "bet" && isSettled(ledger, e)),
+          40_000
+        );
       }
 
       const after = await readWallet(page);
