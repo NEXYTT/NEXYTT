@@ -1,0 +1,168 @@
+/* ==========================================================================
+   NEXYTT — Design tokens
+   Single source of truth for color, type, space, motion.
+   Consumed by both /casino and /shop. Never hardcode a hex outside this file.
+   ========================================================================== */
+
+:root {
+  /* --- Type scale (1.250 major third, 16px base) --- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-display: "Bahnschrift", "DIN Alternate", "Segoe UI Semibold",
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code",
+    Menlo, Consolas, monospace;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+  --text-5xl: 4rem;
+
+  --leading-tight: 1.15;
+  --leading-snug: 1.35;
+  --leading-normal: 1.6;
+
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.04em;
+  --tracking-caps: 0.12em;
+
+  /* --- Space (4px base grid) --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  /* --- Radii --- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+
+  /* --- Semantic status (shared by both apps) --- */
+  --win: #22c55e;
+  --win-soft: rgba(34, 197, 94, 0.14);
+  --loss: #ef4444;
+  --loss-soft: rgba(239, 68, 68, 0.14);
+  --warn: #f59e0b;
+  --warn-soft: rgba(245, 158, 11, 0.14);
+  --info: #38bdf8;
+  --info-soft: rgba(56, 189, 248, 0.14);
+
+  /* --- Layout --- */
+  --container: 1200px;
+  --container-wide: 1440px;
+  --header-h: 64px;
+}
+
+/* --------------------------------------------------------------------------
+   Casino surface palette — obsidian + gold. Applied via [data-theme="casino"].
+   -------------------------------------------------------------------------- */
+[data-theme="casino"] {
+  --bg: #07090f;
+  --bg-elev-1: #0d1119;
+  --bg-elev-2: #141a26;
+  --bg-elev-3: #1c2433;
+  --bg-inset: #05070b;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --fg: #eef2f8;
+  --fg-muted: #98a3b8;
+  --fg-subtle: #63708a;
+
+  --accent: #f5c451;
+  --accent-hi: #ffdd8a;
+  --accent-lo: #b8912f;
+  --accent-fg: #16120a;
+  --accent-soft: rgba(245, 196, 81, 0.12);
+
+  --felt: #0d5c3f;
+  --felt-hi: #147a53;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 6px 20px -6px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 24px 60px -18px rgba(0, 0, 0, 0.85);
+  --glow-accent: 0 0 0 1px rgba(245, 196, 81, 0.35),
+    0 8px 32px -8px rgba(245, 196, 81, 0.4);
+
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   Shop surface palette — light retail default, dark variant below.
+   -------------------------------------------------------------------------- */
+[data-theme="shop"] {
+  --bg: #ffffff;
+  --bg-elev-1: #f7f8fa;
+  --bg-elev-2: #eef1f5;
+  --bg-elev-3: #e4e8ee;
+  --bg-inset: #f2f4f7;
+
+  --border: rgba(16, 24, 40, 0.1);
+  --border-strong: rgba(16, 24, 40, 0.2);
+
+  --fg: #101828;
+  --fg-muted: #55607a;
+  --fg-subtle: #8792a8;
+
+  --accent: #4f37ea;
+  --accent-hi: #6b55f5;
+  --accent-lo: #3a25c4;
+  --accent-fg: #ffffff;
+  --accent-soft: rgba(79, 55, 234, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 8px 24px -8px rgba(16, 24, 40, 0.14);
+  --shadow-lg: 0 24px 56px -20px rgba(16, 24, 40, 0.22);
+  --glow-accent: 0 0 0 3px rgba(79, 55, 234, 0.16);
+
+  color-scheme: light;
+}
+
+[data-theme="shop"][data-mode="dark"] {
+  --bg: #0b0e14;
+  --bg-elev-1: #121722;
+  --bg-elev-2: #1a2130;
+  --bg-elev-3: #232c3e;
+  --bg-inset: #080b10;
+
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --fg: #eaeef6;
+  --fg-muted: #98a3b8;
+  --fg-subtle: #6b7789;
+
+  --accent: #8b7bff;
+  --accent-hi: #a596ff;
+  --accent-lo: #6a58e8;
+  --accent-fg: #0b0714;
+  --accent-soft: rgba(139, 123, 255, 0.14);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 24px 56px -20px rgba(0, 0, 0, 0.75);
+
+  color-scheme: dark;
+}
