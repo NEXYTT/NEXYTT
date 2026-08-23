@@ -336,7 +336,8 @@ function renderProduct(root, product) {
 
       ship.free
         ? el("p.text-sm.muted", { style: { margin: 0 } },
-            `Este pedido supera los ${money(zone.freeOver)} de envío gratuito a ${zone.label.toLowerCase()}.`)
+            // Zone labels are proper nouns ("España peninsular"), so they go in as-is.
+            `Este pedido supera los ${money(zone.freeOver)} de envío gratuito para ${zone.label}.`)
         : el("div", { style: { display: "grid", gap: "var(--space-2)" } }, [
             el("div.progress-free", { "aria-hidden": "true" }, [
               el("div.progress-free__fill", {
