@@ -1,0 +1,11 @@
+# Nothing here is built or installed — these are only stray local artefacts.
+node_modules/
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Scratch files from simulation and verification runs
+/tmp-*
+*.tmp.mjs
+/scratch/
