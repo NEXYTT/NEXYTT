@@ -1,0 +1,297 @@
+/* ==========================================================================
+   NEXYTT — Portada del proyecto (raíz).
+   Requires tokens.css and base.css. Only the landing page loads this file;
+   it never touches the casino or the shop shells.
+   ========================================================================== */
+
+body {
+  /* Two soft pools of light on the obsidian background. color-mix keeps the
+     tint tied to the theme tokens instead of hardcoding another hex. */
+  background:
+    radial-gradient(1100px 560px at 10% -12%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%),
+    radial-gradient(900px 500px at 92% 2%, color-mix(in srgb, var(--info) 9%, transparent), transparent 58%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+main > section { padding-block: var(--space-8); }
+main > section + section { border-top: 1px solid var(--border); }
+
+.section-title {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-5);
+}
+
+/* --- Top bar -------------------------------------------------------------- */
+.landing-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--bg-elev-1) 86%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid var(--border);
+}
+.landing-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--header-h);
+}
+.landing-nav__links { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+.landing-nav__links a {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--fg-muted);
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.landing-nav__links a:hover { background: var(--bg-elev-2); color: var(--fg); }
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: var(--tracking-caps);
+  font-size: var(--text-md);
+}
+.brand-mark__badge {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(140deg, var(--accent-hi), var(--accent-lo));
+  color: var(--accent-fg);
+  font-size: var(--text-sm);
+  font-weight: 900;
+}
+
+/* Two rows on a phone: the link row would otherwise squeeze the wordmark out. */
+@media (max-width: 720px) {
+  .landing-nav__inner { flex-direction: column; align-items: flex-start; gap: var(--space-2); padding-block: var(--space-3); }
+  .landing-nav__links { margin-left: calc(var(--space-3) * -1); }
+}
+
+/* --- Hero ----------------------------------------------------------------- */
+/* Copy on the left, the four headline numbers on the right: at desktop width a
+   single left-aligned column leaves half the fold empty. */
+.hero {
+  padding-block: var(--space-9) var(--space-8);
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: var(--space-7);
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
+}
+
+.hero__title {
+  /* Fluid: 14vw keeps the six letters inside a 390px viewport with room to spare. */
+  font-size: clamp(var(--text-4xl), 14vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  margin-block: var(--space-3);
+  background: linear-gradient(120deg, var(--accent-hi), var(--accent) 45%, var(--accent-lo));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--accent);
+  -webkit-text-fill-color: transparent;
+}
+
+.hero__lede {
+  max-width: 60ch;
+  font-size: var(--text-lg);
+  color: var(--fg-muted);
+}
+.hero__lede strong { color: var(--fg); }
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.hero__facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.hero__facts > div {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+.hero__facts dt {
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+.hero__facts dd {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* --- Project cards -------------------------------------------------------- */
+.project-grid {
+  display: grid;
+  /* min(100%, 360px) so the track never demands more than the viewport has. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: var(--space-5);
+}
+
+.project-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+/* A hairline of colour at the top edge tells the two projects apart. */
+.project-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+.project-card--shop::before { background: linear-gradient(90deg, var(--info), transparent); }
+.project-card h3 { font-size: var(--text-2xl); }
+.project-card code { overflow-wrap: anywhere; }
+
+.feature-list { list-style: none; padding: 0; display: grid; gap: var(--space-3); }
+.feature-list li {
+  position: relative;
+  padding-left: var(--space-6);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+.feature-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+.project-card--shop .feature-list li::before {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.feature-list strong { color: var(--fg); font-weight: 650; }
+
+.tech-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip-static {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-inset);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-muted);
+}
+
+.project-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: auto;
+  padding-top: var(--space-2);
+}
+
+/* --- How it is built ------------------------------------------------------ */
+.build-layout {
+  display: grid;
+  /* Explicit minmax(0, …) tracks: the folder tree is wider than a phone and
+     must scroll inside .scroll-x instead of stretching the whole column. */
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .build-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.build-tree > * + * { margin-top: var(--space-4); }
+.tree {
+  font-size: var(--text-xs);
+  line-height: 1.75;
+  color: var(--fg-muted);
+  white-space: pre;
+  margin: 0;
+}
+
+.principles { list-style: none; padding: 0; display: grid; gap: var(--space-4); }
+.principles > li {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+.principles h3 { font-size: var(--text-md); margin-bottom: var(--space-2); }
+
+/* --- Honest notice -------------------------------------------------------- */
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: var(--space-5);
+}
+.notice {
+  background: var(--bg-elev-1);
+  border: 1px solid color-mix(in srgb, var(--warn) 32%, var(--border));
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.notice h3 { color: var(--warn); font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.notice p { font-size: var(--text-sm); color: var(--fg-muted); }
+.notice p + p { margin-top: var(--space-3); }
+.notice strong { color: var(--fg); }
+
+/* --- Footer --------------------------------------------------------------- */
+.landing-foot {
+  border-top: 1px solid var(--border);
+  background: var(--bg-inset);
+  padding-block: var(--space-6);
+  margin-top: var(--space-8);
+}
+.landing-foot__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.landing-foot__links { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.landing-foot__links a {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.landing-foot__links a:hover { color: var(--accent); }

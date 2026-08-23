@@ -17,7 +17,7 @@
 .lobby-layout {
   display: grid;
   /* minmax(0, 1fr) instead of 1fr: a wide table must not blow out the column. */
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: var(--space-5);
   align-items: start;
 }
@@ -45,11 +45,22 @@
   .lobby-side { position: static; }
 }
 
+/* Slightly narrower than the shared default so three tiles still fit next to
+   the session aside on a 1280px screen. */
+.lobby-main .game-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+
 .fair-block > * + * { margin-top: var(--space-4); }
 .fair-block code { font-size: 0.9em; overflow-wrap: anywhere; }
 
 .ledger__title { font-size: var(--text-lg); }
-.ledger .table td:first-child { min-width: 108px; }
+
+/* The sidebar has room for four columns only if the ledger is compact, and a
+   cut-off "Cuándo" column is worse than a shortened game name: the name is
+   already known from the row you clicked, the timestamp is not. */
+.ledger .table { font-size: var(--text-xs); }
+.ledger .table th,
+.ledger .table td { padding: var(--space-2); }
+.ledger .table td:first-child .truncate { max-width: 104px; }
 .ledger .empty { padding: var(--space-6) var(--space-2); }
 .ledger .empty__icon { display: flex; justify-content: center; }
 
@@ -200,6 +211,20 @@
   height: 100%;
   background: var(--accent);
 }
+
+/* The "cómo se traduce" column is a sentence: below this width it degrades
+   into one word per line, so the table scrolls inside .table-wrap instead. */
+#mapping-host .table { min-width: 660px; }
+/* Monospace cells are right-aligned by base.css; here the column reads as a
+   label next to prose, so it stays left. */
+#mapping-host .table td.mono { text-align: left; }
+
+/* --- Shell touch-ups ------------------------------------------------------ */
+/* The shell renders the caption and the amount as two inline spans, which run
+   together as "Saldo5.000,00" unless the caption is a block of its own. */
+.balance__label { display: block; }
+/* Seven links in the bar: without this they wrap and the header doubles in height. */
+.topnav a { white-space: nowrap; }
 
 /* --- Narrow screens ------------------------------------------------------- */
 /* The shell bar is laid out for desktop. On a phone the strapline and the

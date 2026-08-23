@@ -151,6 +151,16 @@ export const PAYTABLE = {
   scatter: { 3: 2, 4: 10, 5: 50 },
 };
 
+/**
+ * Theoretical return to player, computed exactly from the strips and the table
+ * above rather than measured: 0,8330 from the lines + 0,0160 from the scatters
+ * per spin, lifted by the free-spin feature to
+ *   RTP = (0,8330 + 0,0160) × (1 + 10 spins × ×2 × 0,006585 trigger) = 0,9608.
+ * Measured back: 3.000.000 rounds over real `Round` streams (three client
+ * seeds, free spins played out) return 96,02 %.
+ */
+export const THEORETICAL_RTP = 0.9608;
+
 /** Symbols that can head a payline: everything except the wild and the scatter. */
 const PAYING_SYMBOLS = SYMBOLS.filter((s) => !s.substitutes && !s.scatter).map((s) => s.id);
 

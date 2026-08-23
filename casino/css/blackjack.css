@@ -1,0 +1,215 @@
+/* ==========================================================================
+   Blackjack 21 — mesa, manos divididas y panel de acciones.
+   Requires tokens.css, base.css and casino.css. Cards, felt and the result
+   banner come from casino.css; this file only adds the table furniture.
+   No literal colours: every tint is derived from a token with color-mix().
+   ========================================================================== */
+
+.bj-table {
+  /* Local palette derived from the theme so the felt keeps its contrast. */
+  --bj-line: color-mix(in srgb, var(--fg) 16%, transparent);
+  --bj-panel: color-mix(in srgb, var(--bg-inset) 45%, transparent);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 540px;
+}
+
+/* --- Seats --------------------------------------------------------------- */
+.bj-seat { display: flex; flex-direction: column; gap: var(--space-3); }
+/* The player's row is pinned to the bottom edge, dealer at the top, banner
+   floating between them — the geometry of a real table. */
+.bj-seat--player { margin-top: auto; }
+
+.bj-seat__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.bj-seat__title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 800;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 78%, transparent);
+}
+.bj-seat__note {
+  font-size: var(--text-2xs);
+  color: color-mix(in srgb, var(--fg) 58%, transparent);
+}
+
+/* --- Hand value counter --------------------------------------------------- */
+.bj-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--bj-panel);
+  border: 1px solid var(--bj-line);
+  color: var(--fg);
+  white-space: nowrap;
+}
+.bj-value--soft { border-color: color-mix(in srgb, var(--info) 55%, transparent); color: var(--info); }
+.bj-value--bust { border-color: var(--loss); color: var(--loss); }
+.bj-value--blackjack { border-color: var(--accent); color: var(--accent); }
+
+/* --- Player hands, side by side ------------------------------------------ */
+.bj-hands {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  /* Four split hands are wider than a phone: this box scrolls, the page never
+     does (the .stage clips its own overflow). */
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+  scrollbar-width: thin;
+}
+
+.bj-hand {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  transition: border-color var(--dur-base) var(--ease-out),
+    background var(--dur-base) var(--ease-out);
+}
+.bj-hands--multi .bj-hand {
+  background: var(--bj-panel);
+  border-color: var(--bj-line);
+}
+/* The hand awaiting a decision. */
+.bj-hand.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--glow-accent);
+}
+.bj-hand.is-settled { opacity: 0.82; }
+
+.bj-hand__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+.bj-hand__label {
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 70%, transparent);
+}
+.bj-hand__foot { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.bj-hand__stake {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--fg) 66%, transparent);
+}
+
+/* Split hands get smaller cards so four of them still fit the felt. */
+.bj-hands--multi .card-hand { min-height: 92px; gap: var(--space-1); }
+.bj-hands--multi .playing-card {
+  width: 56px;
+  height: 82px;
+  padding: 4px 5px;
+  border-radius: 8px;
+}
+.bj-hands--multi .playing-card__corner { font-size: var(--text-xs); }
+.bj-hands--multi .playing-card__pip { font-size: var(--text-lg); }
+
+/* --- Banner --------------------------------------------------------------- */
+.bj-banner { margin: 0; }
+.bj-banner__detail {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+.result--win .bj-banner__detail,
+.result--loss .bj-banner__detail { color: inherit; opacity: 0.82; }
+
+/* --- Action panel --------------------------------------------------------- */
+.bj-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.bj-actions .btn { min-height: 44px; }
+.bj-actions .btn--wide { grid-column: 1 / -1; }
+
+/* The move basic strategy recommends, flagged for a few seconds. */
+.btn.is-suggested {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: bj-suggest 1.1s var(--ease-out) 3;
+}
+@keyframes bj-suggest {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: var(--glow-accent); }
+}
+
+.bj-insurance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--warn-soft);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  font-size: var(--text-sm);
+}
+.bj-insurance__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+
+/* --- House rules ---------------------------------------------------------- */
+.bj-rules { display: grid; gap: var(--space-2); margin: 0; }
+.bj-rules > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+}
+.bj-rules dt { color: var(--fg-muted); }
+.bj-rules dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* --- Phone ---------------------------------------------------------------- */
+@media (max-width: 430px) {
+  .bj-table { min-height: 460px; }
+  .playing-card { width: 62px; height: 90px; padding: 5px 6px; }
+  .playing-card__corner { font-size: var(--text-sm); }
+  .playing-card__pip { font-size: var(--text-xl); }
+  .card-hand { min-height: 100px; }
+}
+
+/* --- Phone fallback for the shared top bar -------------------------------- */
+/* mountShell() lays brand + balance + the two dialog buttons out as a single
+   non-wrapping row, which is wider than a 390 px viewport and drags the whole
+   page sideways. The shell is shared code owned by another module, so — as in
+   slots.css — the fix lives with the page: let that row wrap on narrow screens.
+   Kept identical across pages on purpose, so the header behaves the same
+   everywhere until the shell itself grows the rule. */
+@media (max-width: 620px) {
+  .topbar__inner {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+    padding-block: var(--space-2);
+  }
+  .brand__sub { display: none; }
+  .balance { flex: 1 1 auto; justify-content: space-between; }
+}
