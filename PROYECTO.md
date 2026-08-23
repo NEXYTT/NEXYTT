@@ -142,6 +142,31 @@ clic. La animación representa un resultado ya fijado, nunca al revés.
 
 ---
 
+## Verificación
+
+| Suite | Qué comprueba | Resultado |
+| --- | --- | --- |
+| `npm test` | 254 pruebas de lógica pura | ✅ |
+| `npm run test:smoke` | Las 16 páginas en Chromium | ✅ 16/16 |
+| `npm run test:e2e` | Flujo de compra completo | ✅ 26/26 |
+| `node tests/casino-e2e.mjs` | Una ronda real en cada juego | ✅ 44/44 |
+
+Lo que cubren las pruebas de navegador y no puede cubrir ninguna prueba por
+página: que el total que se le cita al cliente en el checkout sea **el mismo**
+que registra el pedido (con descuento aplicado, para que un descuento perdido
+entre páginas salte), que una tarjeta que falla Luhn sea rechazada antes de
+aceptar una válida, que el libro mayor del casino siga reconstruyendo el saldo
+exactamente tras jugar, y que un límite de juego responsable bloquee la apuesta
+en lugar de romper la página.
+
+Errores reales que encontraron estas pruebas durante el desarrollo:
+
+- Un carrito vacío cobraba 3,99 € de envío.
+- `evaluatePoker` ordenaba la escalera A-2-3-4-5 por encima de una escalera al 6.
+- Tolerancias de RTP elegidas a mano en lugar de derivadas del error estándar,
+  demasiado estrechas para los juegos de alta varianza y sin poder estadístico
+  para otros.
+
 ## Estructura
 
 ```
