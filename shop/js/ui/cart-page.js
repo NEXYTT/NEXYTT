@@ -51,6 +51,16 @@ const COUNTRY_NAMES = {
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
+/**
+ * Show/hide. The `hidden` attribute is only a UA rule, so any class that sets
+ * `display` (`.row`, `.summary__row`) beats it: both have to be toggled, and
+ * clearing the inline value lets the class decide the display again.
+ */
+function setHidden(node, hidden) {
+  node.hidden = hidden;
+  node.style.display = hidden ? "none" : "";
+}
+
 /* --- Hosts ---------------------------------------------------------------- */
 
 const cartView = $("#cart-view");
@@ -182,9 +192,9 @@ function removePromo() {
 function renderPromo() {
   const promo = cart.promoCode ? PROMOS[cart.promoCode] : null;
 
-  promoRow.hidden = Boolean(promo);
-  promoHints.hidden = Boolean(promo);
-  promoActive.hidden = !promo;
+  setHidden(promoRow, Boolean(promo));
+  setHidden(promoHints, Boolean(promo));
+  setHidden(promoActive, !promo);
   if (!promo) return;
 
   replace(promoActive, [
@@ -214,7 +224,10 @@ const freeBar = el("div.progress-free", {
   "aria-valuenow": "0",
 }, [freeFill]);
 
-const freeBlock = el("div", { style: { display: "grid", gap: "var(--space-2)" } }, [freeText, freeBar]);
+// Plain wrapper with no display of its own, so hiding it is a one-liner.
+const freeBlock = el("div", {}, [
+  el("div", { style: { display: "grid", gap: "var(--space-2)" } }, [freeText, freeBar]),
+]);
 
 /* --- Summary --------------------------------------------------------------- */
 
@@ -294,7 +307,7 @@ function renderSummary() {
   rowSubtotal.label.textContent = `Subtotal (${plural(t.count, "artículo", "artículos")})`;
   rowSubtotal.value.textContent = money(t.subtotal);
 
-  rowDiscount.row.hidden = t.discount === 0;
+  setHidden(rowDiscount.row, t.discount === 0);
   rowDiscount.label.textContent = t.promo ? `Descuento (${t.promo.code})` : "Descuento";
   rowDiscount.value.textContent = `−${money(t.discount)}`;
   rowDiscount.value.className = "text-win";
@@ -311,7 +324,7 @@ function renderSummary() {
   rowTax.value.textContent = money(t.tax);
   rowTotal.value.textContent = money(t.total);
 
-  savingsNote.hidden = t.savings <= 0;
+  setHidden(savingsNote, t.savings <= 0);
   replace(savingsNote, [
     el("span.badge.badge--win", {}, `Te ahorras ${money(t.savings)}`),
   ]);
@@ -322,14 +335,12 @@ function renderSummary() {
   // The progress bar is a motivator, not a receipt: once the threshold is met
   // it disappears entirely instead of sitting there at 100%.
   const missing = t.missingForFree;
+  setHidden(freeBlock, missing <= 0);
   if (missing > 0) {
-    freeBlock.hidden = false;
     freeText.textContent = `Te faltan ${money(missing)} para el envío gratis`;
     const pct = Math.max(0, Math.min(100, Math.round((t.discounted / t.zone.freeOver) * 100)));
     freeFill.style.width = `${pct}%`;
     freeBar.setAttribute("aria-valuenow", String(pct));
-  } else {
-    freeBlock.hidden = true;
   }
 
   setDisabled(checkoutLink, t.count === 0);
@@ -430,7 +441,7 @@ function syncLines() {
 
     nodes.input.value = String(line.qty);
     nodes.subtotal.textContent = money(line.unitPrice * line.qty);
-    nodes.hint.hidden = line.qty < MAX_QTY;
+    setHidden(nodes.hint, line.qty < MAX_QTY);
     setStepperDisabled(nodes.minus, line.qty <= 1);
     setStepperDisabled(nodes.plus, line.qty >= MAX_QTY);
   }
@@ -616,25 +627,23 @@ const trustItem = ({ glyph, title, note }) =>
 function render() {
   const empty = cart.isEmpty;
 
-  cartView.hidden = empty;
-  emptyView.hidden = !empty;
-  crossSection.hidden = empty;
+  setHidden(cartView, empty);
+  setHidden(emptyView, !empty);
+  setHidden(crossSection, empty);
 
   lede.textContent = empty
     ? "Aquí aparecerán los productos que vayas añadiendo."
     : `${plural(cart.count, "artículo", "artículos")} en ${plural(cart.lines.length, "línea", "líneas")}. Los precios ya llevan el IVA.`;
 
-  if (empty) {
-    renderPromo();
-    return;
-  }
+  renderPromo();
+  // Rendered even when empty: it is what leaves the checkout button disabled.
+  renderSummary();
+
+  if (empty) return;
 
   lineNodes.clear();
   replace(linesHost, cart.lines.map(cartLine));
   syncLines();
-
-  renderPromo();
-  renderSummary();
   replace(crossGrid, crossSellProducts().map((p) => productCard(p, { onAdd: addToCart })));
 }
 

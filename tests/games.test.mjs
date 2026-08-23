@@ -432,12 +432,82 @@ test("crash settles on the crash point, not on when the player clicked", () => {
 
 /* --- Blackjack ------------------------------------------------------------ */
 
-test("blackjack played with basic strategy returns close to 99.5%", () => {
-  const HANDS = 50_000;
+/**
+ * The exact strategy check. Every two-card hand against every upcard, weighted
+ * by infinite-deck probability — deterministic, exhaustive, and far more
+ * sensitive than any simulation: a single wrong cell in the chart moves these
+ * frequencies by more than the tolerance, whereas it would hide inside the
+ * noise of even a million simulated hands.
+ *
+ * The expected values are derived from the rules the chart claims to implement,
+ * not copied from a reference table, so they can be checked by hand:
+ * surrender fires on hard 16 vs 9/10/A (8,8 excepted, which is split) and on
+ * hard 15 vs 10, which works out at 4.92% of openings.
+ */
+test("the basic-strategy chart produces the move frequencies its rules imply", () => {
+  const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+  const card = (rank) => ({ rank, suit: "s", id: rank });
+  const upValue = (rank) =>
+    rank === "A" ? 11 : ["10", "J", "Q", "K"].includes(rank) ? 10 : Number(rank);
+
+  const freq = { surrender: 0, double: 0, split: 0, stand: 0, hit: 0 };
+  const p = 1 / 13;
+
+  for (const a of RANKS) {
+    for (const b of RANKS) {
+      for (const up of RANKS) {
+        const move = blackjack.strategyFor([card(a), card(b)], upValue(up), {
+          canDouble: true,
+          canSplit: true,
+          canSurrender: true,
+        });
+        assert.ok(move in freq, `the chart returned an unknown move: ${move}`);
+        freq[move] += p * p * p;
+      }
+    }
+  }
+
+  // Surrender: hard 16 (10+6, 9+7 — never 8,8) vs 9/10/A, plus hard 15
+  // (10+5, 9+6, 8+7) vs 10.
+  const ten = 4 / 13;
+  const one = 1 / 13;
+  const hard16 = 2 * ten * one + 2 * one * one;
+  const hard15 = 2 * ten * one + 4 * one * one;
+  const expectedSurrender = hard16 * (2 * one + ten) + hard15 * ten;
+
+  assert.ok(
+    Math.abs(freq.surrender - expectedSurrender) < 1e-9,
+    `surrender fires on ${pct(freq.surrender)} of openings, but the stated rule implies ${pct(expectedSurrender)}`
+  );
+
+  // The remaining frequencies pin the rest of the chart. A misplaced cell in the
+  // doubling or splitting rows moves these well beyond a tenth of a point.
+  assert.ok(Math.abs(freq.double - 0.0965) < 0.001, `doubles at ${pct(freq.double)}, expected 9.65%`);
+  assert.ok(Math.abs(freq.split - 0.0264) < 0.001, `splits at ${pct(freq.split)}, expected 2.64%`);
+  assert.ok(Math.abs(freq.stand - 0.4534) < 0.002, `stands at ${pct(freq.stand)}, expected 45.34%`);
+  assert.ok(Math.abs(freq.hit - 0.3746) < 0.002, `hits at ${pct(freq.hit)}, expected 37.46%`);
+
+  const total = Object.values(freq).reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(total - 1) < 1e-9, "the chart must return a move for every situation");
+});
+
+/**
+ * The simulation check. Blackjack's per-hand standard deviation is about 1.14
+ * units, so separating a 0.34% edge from zero at four sigma would take roughly
+ * two million hands — too slow for a test suite. This is deliberately a
+ * coarse check on the settlement pipeline (that stakes, doubles, splits,
+ * naturals and surrenders all reconcile), while the chart itself is pinned
+ * exactly by the enumeration above.
+ */
+test("blackjack settles to a house edge, not a player edge", () => {
+  const HANDS = 60_000;
   const STAKE = 100;
+  /** Net result per unit of *initial* bet — how a blackjack edge is quoted. */
+  const perInitialBet = new Returns();
   let wagered = 0;
   let returned = 0;
   let naturals = 0;
+  let pushedNaturals = 0;
 
   let game = blackjack.createGame(new Round("bj", "audit", 0));
   let nonce = 1;
@@ -451,21 +521,36 @@ test("blackjack played with basic strategy returns close to 99.5%", () => {
 
     wagered += result.wagered;
     returned += result.payout;
+    perInitialBet.add((result.payout - result.wagered) / STAKE);
+
     if (result.perHand.some((h) => h.result === "blackjack")) naturals++;
+    // A natural that meets a dealer natural pushes, so it is not counted above.
+    if (result.dealerBlackjack && result.perHand.some((h) => h.result === "push" && h.total === 21)) {
+      pushedNaturals++;
+    }
     game = played;
   }
 
-  const rtp = returned / wagered;
+  const HOUSE_EDGE = 0.0034; // 6 decks, S17, DAS, late surrender, blackjack 3:2
+  const band = 4 * perInitialBet.standardError;
   assert.ok(
-    rtp > 0.985 && rtp < 1.0,
-    `measured RTP ${pct(rtp)} — basic strategy against S17 should land near 99.5%`
+    Math.abs(-perInitialBet.mean - HOUSE_EDGE) <= band,
+    `house edge measured at ${pct(-perInitialBet.mean)} per initial bet, ` +
+      `expected ${pct(HOUSE_EDGE)} (band ±${pct(band)} over ${HANDS.toLocaleString("es-ES")} hands)`
   );
 
-  // A natural comes up about 4.8% of hands; far from that means the deal is wrong.
-  const naturalRate = naturals / HANDS;
+  // Total action exceeds the initial bets because of doubles and splits.
+  const action = wagered / (HANDS * STAKE);
+  assert.ok(action > 1.1 && action < 1.2, `action per initial bet was ${action.toFixed(3)}, expected about 1.13`);
+  assert.ok(returned / wagered > 0.98, `RTP on total action was ${pct(returned / wagered)}`);
+
+  // Naturals occur on about 4.75% of hands; the ones that push against a dealer
+  // natural are settled separately, so both counts are needed to hit that figure.
+  const naturalRate = (naturals + pushedNaturals) / HANDS;
+  const naturalSe = Math.sqrt((0.0475 * 0.9525) / HANDS);
   assert.ok(
-    naturalRate > 0.035 && naturalRate < 0.06,
-    `naturals came up ${pct(naturalRate)} of the time, expected about 4.8%`
+    Math.abs(naturalRate - 0.0475) <= 4 * naturalSe,
+    `naturals came up ${pct(naturalRate)}, expected 4.75% (band ±${pct(4 * naturalSe)})`
   );
 });
 
