@@ -403,7 +403,13 @@
 }
 .step[aria-current="step"] { color: var(--fg); }
 .step[aria-current="step"] .step__num { background: var(--accent); color: var(--accent-fg); }
-.step[data-done="true"] .step__num { background: var(--win); color: #05130a; }
+/* Dark ink derived from the token itself: `--win` is a fixed green in both
+   themes, so the readable foreground on it is the same green taken almost to
+   black. Keeps the rule inside the token system instead of hardcoding a hex. */
+.step[data-done="true"] .step__num {
+  background: var(--win);
+  color: color-mix(in srgb, var(--win) 15%, black);
+}
 .step__sep { width: 24px; height: 1px; background: var(--border-strong); }
 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }

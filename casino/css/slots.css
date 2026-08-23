@@ -277,18 +277,3 @@
   font-variant-numeric: tabular-nums;
 }
 .win-list__item.is-active { border-color: var(--accent); color: var(--accent); }
-
-/* --- Phone fallback for the shared top bar -------------------------------- */
-/* The shell packs brand + balance + two dialog buttons into a single
-   non-wrapping row, which is wider than a 390 px viewport and makes the whole
-   page scroll sideways. The shell is shared code, so the fix lives here: let
-   that row wrap on narrow screens instead of overflowing. */
-@media (max-width: 620px) {
-  .topbar__inner {
-    flex-wrap: wrap;
-    row-gap: var(--space-2);
-    padding-block: var(--space-2);
-  }
-  .brand__sub { display: none; }
-  .balance { flex: 1 1 auto; justify-content: space-between; }
-}

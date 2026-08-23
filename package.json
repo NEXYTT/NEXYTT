@@ -9,8 +9,10 @@
     "test": "node --test --test-timeout=900000 tests/*.test.mjs",
     "test:smoke": "node tests/smoke.mjs",
     "test:e2e": "node tests/e2e.mjs",
-    "test:all": "npm test && npm run test:smoke && npm run test:e2e",
-    "rtp": "node tests/rtp-report.mjs"
+    "test:all": "npm test && npm run test:contrast && npm run test:smoke && npm run test:e2e && npm run test:casino",
+    "rtp": "node tests/rtp-report.mjs",
+    "test:contrast": "node tests/contrast.mjs",
+    "test:casino": "node tests/casino-e2e.mjs"
   },
   "engines": {
     "node": ">=22"

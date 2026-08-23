@@ -150,6 +150,7 @@ clic. La animación representa un resultado ya fijado, nunca al revés.
 | `npm run test:smoke` | Las 16 páginas en Chromium | ✅ 16/16 |
 | `npm run test:e2e` | Flujo de compra completo | ✅ 26/26 |
 | `node tests/casino-e2e.mjs` | Una ronda real en cada juego | ✅ 44/44 |
+| `node tests/contrast.mjs` | Contraste WCAG AA de los tokens | ✅ 139/139 |
 
 Lo que cubren las pruebas de navegador y no puede cubrir ninguna prueba por
 página: que el total que se le cita al cliente en el checkout sea **el mismo**
@@ -166,6 +167,14 @@ Errores reales que encontraron estas pruebas durante el desarrollo:
 - Tolerancias de RTP elegidas a mano en lugar de derivadas del error estándar,
   demasiado estrechas para los juegos de alta varianza y sin poder estadístico
   para otros.
+- Texto secundario y estados semánticos por debajo del mínimo AA: `#22c55e`
+  sobre blanco da 2,28:1 frente al 4,5:1 exigido. Cada estado tiene ahora tres
+  tokens con papeles distintos — relleno, tinte y **tinta** — porque un color
+  que funciona como relleno rara vez se lee como texto.
+- La propia prueba de humo solo medía a 390 px, así que se le escapó un
+  desbordamiento de 388 px a 768 px: a 390 px una regla `.hide-sm` escondía el
+  elemento que desbordaba. Ahora mide a 360, 390, 768 y 1024 px y nombra el
+  elemento culpable.
 
 ## Estructura
 

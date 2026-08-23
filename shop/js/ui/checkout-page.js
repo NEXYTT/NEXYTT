@@ -21,7 +21,7 @@
 
 import { el, $, replace, wait, toast } from "../../../assets/js/dom.js";
 import { icon } from "../../../assets/js/icons.js";
-import { money } from "../../../assets/js/format.js";
+import { money, percent } from "../../../assets/js/format.js";
 import { cart, store, products, saveOrder } from "../core/context.js";
 import { createOrder, advanceOrder, routeToSuppliers } from "../core/orders.js";
 import { vatRateFor } from "../core/pricing.js";
@@ -39,31 +39,12 @@ import {
   postalRuleFor,
   BRAND_LABEL,
 } from "../core/validation.js";
-import { mountHeader, mountFooter, breadcrumbs } from "./shell.js";
+import { mountHeader, mountFooter, breadcrumbs, COUNTRY_OPTIONS, countryName } from "./shell.js";
 import { productArt } from "./productArt.js";
 
 /* --- Constants ------------------------------------------------------------ */
 
 const DRAFT_KEY = "checkout";
-
-/** Destinations we ship to. Each one has a real postcode and phone rule. */
-const COUNTRIES = [
-  { value: "ES", label: "España" },
-  { value: "PT", label: "Portugal" },
-  { value: "FR", label: "Francia" },
-  { value: "DE", label: "Alemania" },
-  { value: "IT", label: "Italia" },
-  { value: "NL", label: "Países Bajos" },
-  { value: "BE", label: "Bélgica" },
-  { value: "GB", label: "Reino Unido" },
-  { value: "MX", label: "México" },
-  { value: "AR", label: "Argentina" },
-  { value: "CL", label: "Chile" },
-  { value: "CO", label: "Colombia" },
-  { value: "US", label: "Estados Unidos" },
-];
-
-const COUNTRY_LABEL = Object.fromEntries(COUNTRIES.map((c) => [c.value, c.label]));
 
 const STEPS = [
   { n: 1, label: "Datos de envío" },
@@ -130,7 +111,7 @@ function loadDraft() {
   if (!saved || typeof saved !== "object") return;
 
   state.customer = { ...state.customer, ...(saved.customer ?? {}) };
-  if (!COUNTRY_LABEL[state.customer.country]) state.customer.country = "ES";
+  if (!COUNTRY_OPTIONS.some((c) => c.value === state.customer.country)) state.customer.country = "ES";
   if (METHOD_LABEL[saved.method]) state.method = saved.method;
   if (typeof saved.cardHolder === "string") state.card.holder = saved.cardHolder;
 
@@ -338,7 +319,9 @@ const SHIPPING_FIELDS = [
     label: "País de envío",
     tag: "select",
     autocomplete: "country",
-    options: COUNTRIES,
+    // The storefront's one shared destination list; each entry has a real
+    // postcode and phone rule behind it in `core/validation.js`.
+    options: COUNTRY_OPTIONS,
     hint: "Cambia el coste de envío y el IVA aplicado.",
     onInput: () => onCountryChange(),
     validate: () => ({ ok: true }),
@@ -725,7 +708,7 @@ function stepReview() {
       el("div", { style: { display: "grid", gap: "var(--space-4)", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" } }, [
         reviewBlock("Envío", [
           [`${customer.firstName} ${customer.lastName}`, customer.address],
-          ["Localidad", `${customer.postalCode} ${customer.city} · ${COUNTRY_LABEL[customer.country]}`],
+          ["Localidad", `${customer.postalCode} ${customer.city} · ${countryName(customer.country)}`],
           ["Contacto", `${customer.email} · ${customer.phone}`],
           customer.notes ? ["Notas", customer.notes] : null,
         ], { onEdit: () => goTo(1), editLabel: "Editar los datos de envío" }),
@@ -783,17 +766,27 @@ function reviewLine(line) {
   ]);
 }
 
-function totalsTable(totals) {
-  const rate = vatRateFor(state.customer.country);
-  return el("div.panel", {}, [
+/**
+ * The money breakdown, in the same rows and the same wording the cart and the
+ * order page use. Net and tax are shown together because their sum is the
+ * total to the cent, and a customer who sees three different layouts of the
+ * same figures across three screens stops trusting any of them.
+ */
+function breakdownRows(totals, rate) {
+  return [
     summaryRow("Subtotal", money(totals.subtotal)),
     totals.discount > 0
       ? summaryRow(`Descuento${totals.promo ? ` (${totals.promo.code})` : ""}`, `−${money(totals.discount)}`, { good: true })
       : null,
     summaryRow("Envío", totals.shippingFree ? "Gratis" : money(totals.shipping), { good: totals.shippingFree }),
-    summaryRow(`IVA incluido (${Math.round(rate * 100)} %)`, money(totals.tax), { muted: true }),
+    summaryRow("Base imponible", money(totals.net), { muted: true }),
+    summaryRow(`IVA (${percent(rate, { decimals: 0 })}) incluido`, money(totals.tax), { muted: true }),
     el("div.summary__row.summary__row--total", {}, [el("span", {}, "Total"), el("span", {}, money(totals.total))]),
-  ]);
+  ];
+}
+
+function totalsTable(totals) {
+  return el("div.panel", {}, breakdownRows(totals, vatRateFor(state.customer.country)));
 }
 
 /* --- Confirmation --------------------------------------------------------- */
@@ -914,16 +907,7 @@ function renderSummary() {
 
     el("hr.divider", { style: { margin: "var(--space-4) 0" } }),
 
-    summaryRow("Subtotal", money(totals.subtotal)),
-    totals.discount > 0
-      ? summaryRow(`Descuento${totals.promo ? ` (${totals.promo.code})` : ""}`, `−${money(totals.discount)}`, { good: true })
-      : null,
-    summaryRow("Envío", totals.shippingFree ? "Gratis" : money(totals.shipping), { good: totals.shippingFree }),
-    summaryRow(`IVA incluido (${Math.round(rate * 100)} %)`, money(totals.tax), { muted: true }),
-    el("div.summary__row.summary__row--total", {}, [
-      el("span", {}, "Total"),
-      el("span", {}, money(totals.total)),
-    ]),
+    ...breakdownRows(totals, rate),
 
     totals.savings > 0
       ? el("p", { style: { marginTop: "var(--space-3)" } }, [
@@ -932,7 +916,7 @@ function renderSummary() {
       : null,
 
     el("p.text-xs.subtle", { style: { marginTop: "var(--space-3)" } },
-      `Envío a ${COUNTRY_LABEL[state.customer.country] ?? totals.zone.label}: entrega estimada en ${totals.zone.etaDays[0]}–${totals.zone.etaDays[1]} días laborables.`),
+      `Envío a ${countryName(state.customer.country) || totals.zone.label}: entrega estimada en ${totals.zone.etaDays[0]}–${totals.zone.etaDays[1]} días laborables.`),
 
     el("a.btn.btn--ghost.btn--sm.btn--block", { href: "cart.html", style: { marginTop: "var(--space-3)" } }, "Modificar el carrito"),
   ]));

@@ -21,44 +21,19 @@ import {
   STATUS_LABEL,
   createOrder,
   advanceOrder,
+  normaliseReference,
+  purchaseOrderPatch,
   routeToSuppliers,
 } from "../core/orders.js";
 import { listOrders, saveOrder, products } from "../core/context.js";
 import { findById } from "../core/catalog.js";
-import { mountHeader, mountFooter, breadcrumbs } from "./shell.js";
+import { mountHeader, mountFooter, breadcrumbs, cartItemFor, statusBadge } from "./shell.js";
 import { productArt } from "./productArt.js";
 
 const DAY = 86400000;
 const THUMBS = 4;
 
-/**
- * Badge tone per status — same reading as the tracking page (green: good news,
- * red: no parcel is coming). Kept local so neither page controller has to
- * import the other's module-level side effects.
- */
-const STATUS_TONE = {
-  pending_payment: "badge--warn",
-  paid: "badge--info",
-  routing: "badge--info",
-  fulfilled: "badge--accent",
-  shipped: "badge--accent",
-  delivered: "badge--win",
-  cancelled: "badge--loss",
-  refunded: "badge--loss",
-};
-
-/** Order status → the parcel status it implies for every purchase order. */
-const PO_STATUS_ON = {
-  fulfilled: "packed",
-  shipped: "shipped",
-  delivered: "delivered",
-  cancelled: "cancelled",
-};
-
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
-
-/** Loose reference matching, so "nx jxwk" finds NX-JXWK-ABCD. */
-const normaliseRef = (raw) => String(raw ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 const unitsIn = (order) => order.lines.reduce((n, l) => n + l.qty, 0);
 
@@ -173,7 +148,7 @@ function orderCard(order) {
   }, [
     el("div.row.row--between.row--wrap", { style: { gap: "var(--space-2)" } }, [
       el("strong.mono", { style: { fontSize: "var(--text-md)", overflowWrap: "anywhere" } }, order.reference),
-      el(`span.badge.${STATUS_TONE[order.status] ?? "badge"}`, {}, STATUS_LABEL[order.status]),
+      statusBadge(order.status),
     ]),
 
     el("p.text-xs.subtle", {}, `${dateTime(order.createdAt)} · ${relative(order.createdAt)}`),
@@ -240,13 +215,6 @@ function pickLines() {
   }));
 }
 
-/** Keep every parcel's status in step with the order it belongs to. */
-function purchaseOrderPatch(order, to) {
-  const poStatus = PO_STATUS_ON[to];
-  if (!poStatus || !order.purchaseOrders) return {};
-  return { purchaseOrders: order.purchaseOrders.map((po) => ({ ...po, status: poStatus })) };
-}
-
 /**
  * Walk a freshly created order up to `target`, dating each milestone between
  * the purchase and now so the timeline reads like something that really
@@ -276,21 +244,9 @@ function createSampleOrder() {
 
   for (const { product, qty } of pickLines()) {
     const variant = product.variants?.length ? pickOne(product.variants) : null;
-    // Same payload `shell.js#addToCart` builds — repeated rather than imported
-    // because that helper writes straight into the live cart.
-    draft.add({
-      productId: product.id,
-      variantId: variant?.id ?? null,
-      title: product.title,
-      variantLabel: variant?.label ?? "",
-      unitPrice: product.price + (variant?.priceDelta ?? 0),
-      compareAt: product.compareAt,
-      grams: product.grams,
-      supplierId: product.supplierId,
-      supplierCost: product.supplierCost,
-      slug: product.slug,
-      art: product.art,
-    }, qty);
+    // The same line payload the storefront builds — `cartItemFor` rather than
+    // `addToCart`, which writes straight into the live cart.
+    draft.add(cartItemFor(product, variant), qty);
   }
 
   // Backdated by 2–6 days: long enough for the milestones to spread out over
@@ -366,10 +322,10 @@ function noMatchesState() {
 
 /** Apply the current filter and search to the stored orders. */
 function visibleOrders(orders) {
-  const wanted = normaliseRef(queryText);
+  const wanted = normaliseReference(queryText);
   return orders.filter((order) => {
     if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    return !wanted || normaliseRef(order.reference).includes(wanted);
+    return !wanted || normaliseReference(order.reference).includes(wanted);
   });
 }
 

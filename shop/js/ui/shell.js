@@ -12,6 +12,7 @@ import { icon } from "../../../assets/js/icons.js";
 import { money } from "../../../assets/js/format.js";
 import { discountPercent } from "../core/pricing.js";
 import { cart, store } from "../core/context.js";
+import { STATUS_LABEL } from "../core/orders.js";
 import { productArt } from "./productArt.js";
 import { CATEGORIES } from "../../data/products.js";
 
@@ -161,6 +162,57 @@ export function mountFooter() {
   return footer;
 }
 
+/* --- Destinations ---------------------------------------------------------- */
+
+/**
+ * Countries the storefront quotes for, in the order the checkout offers them.
+ * One list for the whole shop: the cart, the checkout and the order pages all
+ * name the same destination, so three copies of this map would eventually
+ * disagree about what "BE" is called.
+ */
+export const COUNTRY_NAMES = {
+  ES: "España",
+  PT: "Portugal",
+  FR: "Francia",
+  DE: "Alemania",
+  IT: "Italia",
+  NL: "Países Bajos",
+  BE: "Bélgica",
+  GB: "Reino Unido",
+  MX: "México",
+  AR: "Argentina",
+  CL: "Chile",
+  CO: "Colombia",
+  US: "Estados Unidos",
+};
+
+/** The same list as `<select>` options, `{ value, label }`. */
+export const COUNTRY_OPTIONS = Object.entries(COUNTRY_NAMES).map(([value, label]) => ({ value, label }));
+
+/** Falls back to the raw code so an order placed before a country was renamed still reads. */
+export const countryName = (code) => COUNTRY_NAMES[code] ?? code ?? "";
+
+/* --- Order status badge ---------------------------------------------------- */
+
+/**
+ * Badge tone per order status. Green means good news, red means no parcel is
+ * coming — the same reading on the tracking page, the order list and the back
+ * office, which is only guaranteed while there is one table.
+ */
+export const STATUS_TONE = {
+  pending_payment: "badge--warn",
+  paid: "badge--info",
+  routing: "badge--info",
+  fulfilled: "badge--accent",
+  shipped: "badge--accent",
+  delivered: "badge--win",
+  cancelled: "badge--loss",
+  refunded: "badge--loss",
+};
+
+export const statusBadge = (status) =>
+  el(`span.badge.${STATUS_TONE[status] ?? "badge"}`, {}, STATUS_LABEL[status] ?? status);
+
 /* --- Product card --------------------------------------------------------- */
 
 /**
@@ -218,25 +270,34 @@ export function ratingRow(product) {
  */
 export function addToCart(product, { variantId = null, qty = 1 } = {}) {
   const variant = product.variants?.find((v) => v.id === variantId) ?? product.variants?.[0] ?? null;
-
-  cart.add(
-    {
-      productId: product.id,
-      variantId: variant?.id ?? null,
-      title: product.title,
-      variantLabel: variant?.label ?? "",
-      unitPrice: product.price + (variant?.priceDelta ?? 0),
-      compareAt: product.compareAt,
-      grams: product.grams,
-      supplierId: product.supplierId,
-      supplierCost: product.supplierCost,
-      slug: product.slug,
-      art: product.art,
-    },
-    qty
-  );
-
+  cart.add(cartItemFor(product, variant), qty);
   toast(`${product.title} añadido al carrito.`, { variant: "win", title: "Añadido" });
+}
+
+/**
+ * The cart-line payload for a product and a chosen variant. A line carries its
+ * own title, price and supplier cost so it survives a catalogue edit — which is
+ * exactly why the shape has to be built in one place: any caller that assembles
+ * it by hand is a line that silently loses a field.
+ *
+ * @param {object} product
+ * @param {object|null} variant
+ * @returns {Omit<import('../core/cart.js').CartLine,'key'|'qty'>}
+ */
+export function cartItemFor(product, variant = null) {
+  return {
+    productId: product.id,
+    variantId: variant?.id ?? null,
+    title: product.title,
+    variantLabel: variant?.label ?? "",
+    unitPrice: product.price + (variant?.priceDelta ?? 0),
+    compareAt: product.compareAt,
+    grams: product.grams,
+    supplierId: product.supplierId,
+    supplierCost: product.supplierCost,
+    slug: product.slug,
+    art: product.art,
+  };
 }
 
 /** Page-level breadcrumb. */

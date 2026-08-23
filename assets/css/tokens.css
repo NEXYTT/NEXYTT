@@ -58,15 +58,35 @@
   --dur-base: 220ms;
   --dur-slow: 420ms;
 
-  /* --- Semantic status (shared by both apps) --- */
+  /* --- Semantic status (shared by both apps) ---
+     Each status has three roles, and they are not interchangeable:
+       --x        the fill: borders, bars, chart series, solid backgrounds
+       --x-soft   the tint: badge and banner backgrounds
+       --x-ink    the *text* colour
+
+     The ink exists because a colour that reads well as a fill is usually
+     unreadable as text on a light background: #22c55e on white is 2.28:1,
+     against the 4.5:1 that WCAG AA requires for body text. Each theme's ink is
+     its fill mixed 55% with that theme's own foreground, so it darkens on light
+     surfaces and lightens on dark ones. Never set text to --win/--loss/--warn/
+     --info directly; use the ink. Recompute with tests/contrast.mjs. */
   --win: #22c55e;
   --win-soft: rgba(34, 197, 94, 0.14);
-  --loss: #ef4444;
-  --loss-soft: rgba(239, 68, 68, 0.14);
+  /* Darkened from #ef4444, where white label text measured only 3.76:1. */
+  --loss: #d63d3d;
+  --loss-soft: rgba(214, 61, 61, 0.14);
   --warn: #f59e0b;
   --warn-soft: rgba(245, 158, 11, 0.14);
   --info: #38bdf8;
   --info-soft: rgba(56, 189, 248, 0.14);
+
+  /* Foregrounds for text sitting ON a solid status fill. Theme-independent:
+     the fill is the same colour in every theme, so its contrast partner is too.
+     #05130a on --win is 10.6:1; #ffffff on --loss is 4.5:1. */
+  --on-win: #05130a;
+  --on-loss: #ffffff;
+  --on-warn: #1a1204;
+  --on-info: #04141d;
 
   /* --- Layout --- */
   --container: 1200px;
@@ -89,7 +109,15 @@
 
   --fg: #eef2f8;
   --fg-muted: #98a3b8;
-  --fg-subtle: #63708a;
+  /* Clears 4.5:1 on all five surfaces. The previous #63708a measured 3.79:1. */
+  --fg-subtle: #808ca3;
+
+  /* On these surfaces green, amber and cyan are already legible as text, so the
+     ink is the fill. Only the red needs lifting. */
+  --win-ink: #22c55e;
+  --loss-ink: #f05454;
+  --warn-ink: #f59e0b;
+  --info-ink: #38bdf8;
 
   --accent: #f5c451;
   --accent-hi: #ffdd8a;
@@ -99,6 +127,17 @@
 
   --felt: #0d5c3f;
   --felt-hi: #147a53;
+
+  /* Playing cards. A physical card is white with black and red pips whatever
+     the room's lighting, so these do not follow the theme — but they belong
+     here rather than in a stylesheet, because they are palette, and because a
+     value defined once cannot drift from a fallback copy of itself. */
+  --card-face: #ffffff;
+  --card-face-edge: #eef1f6;
+  --card-ink: #101828;
+  --card-ink-red: #c8102e;
+  --card-back-a: #1b2740;
+  --card-back-b: #223054;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
   --shadow-md: 0 6px 20px -6px rgba(0, 0, 0, 0.7);
@@ -124,7 +163,15 @@
 
   --fg: #101828;
   --fg-muted: #55607a;
-  --fg-subtle: #8792a8;
+  /* Clears 4.5:1 on all five surfaces. The previous #8792a8 measured 2.84:1. */
+  --fg-subtle: #5f687b;
+
+  /* On white, every status fill is far too light to read: #22c55e is 2.28:1.
+     These are the same hues darkened until they clear 4.5:1 on every surface. */
+  --win-ink: #157839;
+  --loss-ink: #b93232;
+  --warn-ink: #905d06;
+  --info-ink: #216f92;
 
   --accent: #4f37ea;
   --accent-hi: #6b55f5;
@@ -152,9 +199,16 @@
 
   --fg: #eaeef6;
   --fg-muted: #98a3b8;
-  --fg-subtle: #6b7789;
+  /* Clears 4.5:1 on all five surfaces. The previous #6b7789 measured 3.95:1. */
+  --fg-subtle: #8894a6;
 
-  --accent: #8b7bff;
+  --win-ink: #22c55e;
+  --loss-ink: #f26565;
+  --warn-ink: #f59e0b;
+  --info-ink: #38bdf8;
+
+  /* Lifted from #8b7bff, which measured 4.25:1 on the highest dark surface. */
+  --accent: #9081ff;
   --accent-hi: #a596ff;
   --accent-lo: #6a58e8;
   --accent-fg: #0b0714;

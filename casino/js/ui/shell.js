@@ -33,6 +33,9 @@ export function mountShell({ active = "" } = {}) {
       el("nav.topnav.hide-sm", { "aria-label": "Juegos" }, [
         navLink("index.html", "Lobby", active === "lobby"),
         ...GAMES.map((g) => navLink(g.href, g.title, active === g.id)),
+        // The verifier is a first-class page, not just the dialog behind the
+        // padlock: `mountShell({ active: "fairness" })` needs a link to mark.
+        navLink("fairness.html", "Justicia", active === "fairness"),
       ]),
 
       el("span.spacer"),
@@ -431,11 +434,22 @@ export function openResponsibleDialog() {
   ]);
 }
 
-/** Footer disclaimer, appended by every page. */
+/**
+ * Footer disclaimer plus the way back out of the casino, appended by every
+ * page. The top bar only navigates within `/casino`, so without these the
+ * casino is a dead end — the shop footer already links the other way.
+ */
 export function playMoneyNote() {
-  return el("p.play-money-note", {}, [
-    "NEXYTT Casino es una demostración técnica con créditos virtuales sin valor monetario: no se puede depositar ni retirar dinero. ",
-    "Un casino con dinero real requiere licencia del regulador correspondiente (DGOJ en España), verificación de identidad y prevención de blanqueo. ",
-    "Si el juego deja de ser un entretenimiento para ti, en España puedes llamar al 900 200 225 (línea gratuita y confidencial de FEJAR).",
+  return el("footer.play-money-note", {}, [
+    el("p", {}, [
+      "NEXYTT Casino es una demostración técnica con créditos virtuales sin valor monetario: no se puede depositar ni retirar dinero. ",
+      "Un casino con dinero real requiere licencia del regulador correspondiente (DGOJ en España), verificación de identidad y prevención de blanqueo. ",
+      "Si el juego deja de ser un entretenimiento para ti, en España puedes llamar al 900 200 225 (línea gratuita y confidencial de FEJAR).",
+    ]),
+    el("nav.play-money-note__links", { "aria-label": "Salir del casino" }, [
+      el("a", { href: "../index.html" }, "Inicio del proyecto"),
+      el("a", { href: "../shop/index.html" }, "Tienda NEXYTT"),
+      el("a", { href: "fairness.html" }, "Justicia verificable"),
+    ]),
   ]);
 }

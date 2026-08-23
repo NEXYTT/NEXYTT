@@ -20,34 +20,13 @@ import { MAX_QTY, PROMOS } from "../core/cart.js";
 import { SHIPPING_ZONES, vatRateFor } from "../core/pricing.js";
 import { cart, products } from "../core/context.js";
 import { findById, relatedProducts } from "../core/catalog.js";
-import { mountHeader, mountFooter, productCard, addToCart, breadcrumbs } from "./shell.js";
+import { mountHeader, mountFooter, productCard, addToCart, breadcrumbs, COUNTRY_NAMES } from "./shell.js";
 import { productArt } from "./productArt.js";
 
 /** How long the undo offer stays on screen. Long enough to read it, short enough not to nag. */
 const UNDO_MS = 9000;
 const CROSS_SELL = 4;
 const SUGGESTIONS = 4;
-
-/**
- * Destinations we quote for. Only real ISO codes are offered: the selected
- * country is persisted with the cart and travels into the order, where the
- * checkout reads it back to name the destination and pick the VAT rate.
- */
-const COUNTRY_NAMES = {
-  ES: "España",
-  PT: "Portugal",
-  FR: "Francia",
-  DE: "Alemania",
-  IT: "Italia",
-  NL: "Países Bajos",
-  BE: "Bélgica",
-  GB: "Reino Unido",
-  MX: "México",
-  AR: "Argentina",
-  CL: "Chile",
-  CO: "Colombia",
-  US: "Estados Unidos",
-};
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 

@@ -219,21 +219,10 @@
    label next to prose, so it stays left. */
 #mapping-host .table td.mono { text-align: left; }
 
-/* --- Shell touch-ups ------------------------------------------------------ */
-/* The shell renders the caption and the amount as two inline spans, which run
-   together as "Saldo5.000,00" unless the caption is a block of its own. */
-.balance__label { display: block; }
-/* Seven links in the bar: without this they wrap and the header doubles in height. */
-.topnav a { white-space: nowrap; }
-
 /* --- Narrow screens ------------------------------------------------------- */
-/* The shell bar is laid out for desktop. On a phone the strapline and the
-   "Saldo" caption are the two things that push it past the viewport, and
-   neither carries information the pill itself does not already show. */
+/* The shell bar's own phone layout now lives in casino.css, so these two pages
+   no longer override it: the lobby and the verifier get the same header as the
+   six game pages. Only the verifier's own field pair is page-specific. */
 @media (max-width: 560px) {
-  .topbar__inner { gap: var(--space-2); padding-inline: var(--space-3); }
-  .brand__sub { display: none; }
-  .balance { padding-left: var(--space-3); gap: var(--space-2); }
-  .balance__label { display: none; }
   .verify-form__pair { grid-template-columns: 1fr; }
 }

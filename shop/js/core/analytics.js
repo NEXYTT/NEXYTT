@@ -20,6 +20,7 @@
  *      returns the arithmetic identity it satisfies, and it is asserted.
  */
 
+import { money } from "../../../assets/js/format.js";
 import { unitEconomics, suggestPrice, paymentFee, extractTax, roundMinor } from "./pricing.js";
 import { categoryLabel } from "../../data/products.js";
 
@@ -98,7 +99,7 @@ export const VERDICT_TONE = {
 
 export const VERDICT_RULE_TEXT = {
   escalar:
-    `Cumple el margen objetivo, deja al menos ${VERDICT_CRITERIA.minAbsoluteMargin / 100} € por pedido ` +
+    `Cumple el margen objetivo, deja al menos ${money(VERDICT_CRITERIA.minAbsoluteMargin)} por pedido ` +
     `y su ROAS de equilibrio no pasa de ${VERDICT_CRITERIA.scaleRoasCeiling.toFixed(1)}×.`,
   vigilar:
     "Gana dinero, pero se queda por debajo del objetivo o necesita un ROAS incómodo. Sube precio, negocia coste o quítalo de la campaña.",
@@ -166,7 +167,7 @@ export function verdictFor(econ, targetMargin = DEFAULT_TARGET_MARGIN) {
   if (!meetsFloor) {
     reasons.push({
       code: "suelo",
-      text: `Menos de ${C.minAbsoluteMargin / 100} € de contribución por pedido.`,
+      text: `Menos de ${money(C.minAbsoluteMargin)} de contribución por pedido.`,
       tone: "warn",
     });
   }
@@ -654,7 +655,7 @@ export function simulateMonth(products, opts = {}) {
       amount: -spend,
       kind: "cost",
       formula: "gasto mensual introducido",
-      note: `Equivale a ${(adCostPerOrder / 100).toFixed(2)} € de CAC por pedido.`,
+      note: `Equivale a ${money(adCostPerOrder)} de CAC por pedido.`,
     },
     {
       id: "refundLoss",

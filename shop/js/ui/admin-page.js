@@ -48,7 +48,7 @@ import {
   CATALOG_COLUMNS,
   EDITABLE_COLUMNS,
 } from "../core/analytics.js";
-import { mountHeader, mountFooter, breadcrumbs } from "./shell.js";
+import { mountHeader, mountFooter, breadcrumbs, statusBadge } from "./shell.js";
 
 /* --- State ---------------------------------------------------------------- */
 
@@ -932,17 +932,6 @@ function renderSuppliers() {
 
 /* --- Tab: PEDIDOS ---------------------------------------------------------- */
 
-const STATUS_TONE = {
-  pending_payment: "badge--warn",
-  paid: "badge--info",
-  routing: "badge--info",
-  fulfilled: "badge--accent",
-  shipped: "badge--accent",
-  delivered: "badge--win",
-  cancelled: "badge--loss",
-  refunded: "badge--loss",
-};
-
 /**
  * Purchase orders still sitting on our side. `createOrder` opens every PO as
  * "queued"; `routeToSuppliers` is what turns them into an accepted parcel with
@@ -1030,9 +1019,7 @@ function renderOrders() {
                 el("td.num", {}, money(po.cost)),
                 el("td", {}, [
                   el("a.mono.text-xs", { href: `order.html?ref=${encodeURIComponent(order.reference)}`, style: { color: "inherit" } }, order.reference),
-                  el("div", { style: { marginTop: "var(--space-1)" } }, [
-                    el(`span.badge.${STATUS_TONE[order.status] ?? "badge"}`, {}, STATUS_LABEL[order.status]),
-                  ]),
+                  el("div", { style: { marginTop: "var(--space-1)" } }, [statusBadge(order.status)]),
                 ]),
                 el("td", {}, [
                   el("button.btn.btn--primary.btn--sm", {
@@ -1078,7 +1065,7 @@ function renderOrders() {
               el("a.mono.text-xs", { href: `order.html?ref=${encodeURIComponent(order.reference)}`, style: { color: "inherit", overflowWrap: "anywhere" } }, order.reference),
             ]),
             el("td.text-xs.muted", { style: { whiteSpace: "nowrap" } }, dateOnly(order.createdAt)),
-            el("td", {}, [el(`span.badge.${STATUS_TONE[order.status] ?? "badge"}`, {}, STATUS_LABEL[order.status])]),
+            el("td", {}, [statusBadge(order.status)]),
             el("td.num", {}, String(order.lines.reduce((n, l) => n + l.qty, 0))),
             el("td.num", {}, money(e.revenueGross)),
             el("td.num.muted", {}, money(e.revenueNet)),
@@ -1377,6 +1364,10 @@ function renderTabStrip() {
       id: `tab-${tab.id}`,
       "aria-selected": String(tab.id === state.tab),
       "aria-controls": "panel",
+      // Roving tabindex: a tablist is one stop in the tab order, and the arrow
+      // keys move within it. Five tab stops in a row is what it would be
+      // otherwise, and that is not what a screen-reader user is told to expect.
+      tabIndex: tab.id === state.tab ? 0 : -1,
       onclick: () => selectTab(tab.id),
     }, [
       el("span", { "aria-hidden": "true", style: { marginRight: "var(--space-2)", verticalAlign: "-3px" } }, [icon(tab.glyph, { size: 16 })]),
@@ -1384,6 +1375,33 @@ function renderTabStrip() {
     ])
   ));
 }
+
+/**
+ * Arrow / Home / End inside the tab strip, the standard tablist keyboard
+ * contract. Selecting on arrow (rather than requiring Enter) matches the
+ * automatic-activation pattern, which is right here: every panel is already
+ * rendered from local state, so moving is cheap.
+ */
+const TAB_KEYS = {
+  ArrowRight: (i) => (i + 1) % TABS.length,
+  ArrowLeft: (i) => (i - 1 + TABS.length) % TABS.length,
+  Home: () => 0,
+  End: () => TABS.length - 1,
+};
+
+tabStrip.addEventListener("keydown", (ev) => {
+  const move = TAB_KEYS[ev.key];
+  if (!move) return;
+  // Anchor on the tab that actually holds the focus, not on the selected one:
+  // they are the same under the roving tabindex, but a programmatic focus can
+  // separate them and moving from somewhere the user is not looking is worse
+  // than doing nothing.
+  const from = ev.target.closest("[role='tab']")?.id.replace("tab-", "") ?? state.tab;
+  const current = Math.max(0, TABS.findIndex((t) => t.id === from));
+  ev.preventDefault();
+  selectTab(TABS[move(current)].id);
+  $(`#tab-${state.tab}`)?.focus();
+});
 
 function renderTab() {
   const tab = TABS.find((t) => t.id === state.tab) ?? TABS[0];

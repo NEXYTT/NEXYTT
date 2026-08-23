@@ -242,18 +242,3 @@
   color: var(--accent);
   overflow-wrap: anywhere;
 }
-
-/* --- Phone fallback for the shared top bar -------------------------------- */
-/* mountShell() lays brand + balance + the two dialog buttons out as a single
-   non-wrapping row, which is wider than a 390 px viewport and would make the
-   whole page scroll sideways. The shell is shared code, so — as in the other
-   game stylesheets — the fix lives here: let that row wrap on narrow screens. */
-@media (max-width: 620px) {
-  .topbar__inner {
-    flex-wrap: wrap;
-    row-gap: var(--space-2);
-    padding-block: var(--space-2);
-  }
-  .brand__sub { display: none; }
-  .balance { flex: 1 1 auto; justify-content: space-between; }
-}

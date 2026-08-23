@@ -129,13 +129,34 @@ async function checkPage(browser, pagePath, { interact }) {
       }
     }
 
-    // Phone width must not scroll sideways.
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(300);
-    const overflow = await page.evaluate(() =>
-      Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    );
-    if (overflow > 2) problems.push(`horizontal overflow at 390px: ${overflow}px`);
+    // No layout may scroll sideways at any width people actually use.
+    //
+    // Checking one width is not enough, and this test learned that the hard
+    // way: it passed at 390px for weeks while the casino top bar overflowed by
+    // 388px at 768px. At 390px a `.hide-sm` rule hides the nav, so the very
+    // element that overflowed was not on the page. Small-phone, large-phone,
+    // tablet and small-laptop each expose a different breakpoint.
+    for (const [width, height] of [[360, 780], [390, 844], [768, 1024], [1024, 768]]) {
+      await page.setViewportSize({ width, height });
+      await page.waitForTimeout(250);
+      const overflow = await page.evaluate(() =>
+        Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      );
+      // A couple of pixels is sub-pixel rounding, not a broken layout.
+      if (overflow > 2) {
+        const culprit = await page.evaluate(() => {
+          const limit = document.documentElement.clientWidth;
+          for (const node of document.querySelectorAll("body *")) {
+            const box = node.getBoundingClientRect();
+            if (box.right > limit + 2 && box.width > 0) {
+              return `${node.tagName.toLowerCase()}.${String(node.className).split(" ")[0]} (right ${Math.round(box.right)})`;
+            }
+          }
+          return "unknown element";
+        });
+        problems.push(`horizontal overflow at ${width}px: ${overflow}px — ${culprit}`);
+      }
+    }
   } catch (err) {
     problems.push(`navigation failed: ${err.message}`);
   }

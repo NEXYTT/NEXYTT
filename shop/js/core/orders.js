@@ -48,6 +48,38 @@ const TRANSITIONS = {
 export const canTransition = (from, to) => (TRANSITIONS[from] ?? []).includes(to);
 
 /**
+ * Customer-order status → the parcel status it implies for every purchase
+ * order underneath it. Lives here, next to the lifecycle it mirrors, because
+ * the tracking page, the order list and the back office all have to agree on
+ * what "shipped" means for a parcel.
+ */
+export const PO_STATUS_ON = {
+  fulfilled: "packed",
+  shipped: "shipped",
+  delivered: "delivered",
+  cancelled: "cancelled",
+};
+
+/**
+ * Patch that keeps every parcel's status in step with its order. Returns an
+ * empty object for the statuses that say nothing about the parcels (a payment
+ * does not pack a box), so it can be spread into `advanceOrder` unconditionally.
+ */
+export function purchaseOrderPatch(order, to) {
+  const poStatus = PO_STATUS_ON[to];
+  if (!poStatus || !order.purchaseOrders) return {};
+  return { purchaseOrders: order.purchaseOrders.map((po) => ({ ...po, status: poStatus })) };
+}
+
+/**
+ * Loose reference matching: a customer reading "NX-JXWK-ABCD" off an email
+ * routinely types "nx jxwk abcd". Case and punctuation are dropped so both
+ * resolve to the same order.
+ */
+export const normaliseReference = (raw) =>
+  String(raw ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/**
  * Human-readable order reference: NX-<base36 day>-<4 chars>.
  * Short enough to read over the phone, unique enough for a demo dataset.
  * @param {() => number} random injectable for deterministic tests

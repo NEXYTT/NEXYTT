@@ -8,12 +8,12 @@
  */
 
 import { Emitter } from "../../../assets/js/emitter.js";
+import { money } from "../../../assets/js/format.js";
 import {
   extractTax,
   shippingCost,
   vatRateFor,
   zoneForCountry,
-  roundMinor,
   applyRate,
 } from "./pricing.js";
 
@@ -139,8 +139,9 @@ export class Cart extends Emitter {
 
     const subtotal = this.subtotal();
     if (subtotal < promo.minSubtotal) {
-      const missing = ((promo.minSubtotal - subtotal) / 100).toFixed(2);
-      return { ok: false, error: `Faltan ${missing} € para poder usar este código.` };
+      // `money()` and not a raw division: a hand-rolled `toFixed(2)` prints an
+      // English decimal point ("12.34 €") in a Spanish storefront.
+      return { ok: false, error: `Faltan ${money(promo.minSubtotal - subtotal)} para poder usar este código.` };
     }
 
     this.promoCode = code;

@@ -213,20 +213,3 @@
   .playing-card__pip { font-size: var(--text-xl); }
   .card-hand { min-height: 100px; }
 }
-
-/* --- Phone fallback for the shared top bar -------------------------------- */
-/* mountShell() lays brand + balance + the two dialog buttons out as a single
-   non-wrapping row, which is wider than a 390 px viewport and drags the whole
-   page sideways. The shell is shared code owned by another module, so — as in
-   slots.css — the fix lives with the page: let that row wrap on narrow screens.
-   Kept identical across pages on purpose, so the header behaves the same
-   everywhere until the shell itself grows the rule. */
-@media (max-width: 620px) {
-  .topbar__inner {
-    flex-wrap: wrap;
-    row-gap: var(--space-2);
-    padding-block: var(--space-2);
-  }
-  .brand__sub { display: none; }
-  .balance { flex: 1 1 auto; justify-content: space-between; }
-}

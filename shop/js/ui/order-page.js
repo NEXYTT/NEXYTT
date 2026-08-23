@@ -27,11 +27,13 @@ import {
   STATUS_LABEL,
   advanceOrder,
   canTransition,
+  normaliseReference,
+  purchaseOrderPatch,
   routeToSuppliers,
 } from "../core/orders.js";
 import { getOrder, saveOrder, listOrders, products, suppliers } from "../core/context.js";
 import { findById } from "../core/catalog.js";
-import { mountHeader, mountFooter, breadcrumbs } from "./shell.js";
+import { mountHeader, mountFooter, breadcrumbs, countryName, statusBadge } from "./shell.js";
 import { productArt } from "./productArt.js";
 
 /**
@@ -41,18 +43,6 @@ import { productArt } from "./productArt.js";
  */
 const HAPPY_PATH = ORDER_STATUS.filter((s) => s !== "cancelled" && s !== "refunded");
 
-/** Badge tone per status. Green means "good news", red means "no parcel is coming". */
-const STATUS_TONE = {
-  pending_payment: "badge--warn",
-  paid: "badge--info",
-  routing: "badge--info",
-  fulfilled: "badge--accent",
-  shipped: "badge--accent",
-  delivered: "badge--win",
-  cancelled: "badge--loss",
-  refunded: "badge--loss",
-};
-
 /** Supplier-side status of a parcel. Separate vocabulary from the customer order. */
 const PO_STATUS_LABEL = {
   queued: "En cola en el proveedor",
@@ -61,21 +51,6 @@ const PO_STATUS_LABEL = {
   shipped: "En tránsito",
   delivered: "Entregado",
   cancelled: "Cancelado",
-};
-
-/** Order status → the parcel status it implies for every purchase order. */
-const PO_STATUS_ON = {
-  fulfilled: "packed",
-  shipped: "shipped",
-  delivered: "delivered",
-  cancelled: "cancelled",
-};
-
-/** Destinations the storefront quotes for; mirrors the checkout's country list. */
-const COUNTRY_NAMES = {
-  ES: "España", PT: "Portugal", FR: "Francia", DE: "Alemania", IT: "Italia",
-  NL: "Países Bajos", BE: "Bélgica", GB: "Reino Unido", MX: "México",
-  AR: "Argentina", CL: "Chile", CO: "Colombia", US: "Estados Unidos",
 };
 
 const PAYMENT_LABEL = {
@@ -110,12 +85,7 @@ function deliveryRange(minAt, maxAt) {
   return `entre el ${sameMonth ? weekdayDay(minAt) : longDate(minAt)} y el ${longDate(maxAt)}`;
 }
 
-/** Loose reference matching so a typed or pasted reference still resolves. */
-const normaliseRef = (raw) => String(raw ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-
 const supplierById = (id) => suppliers.find((s) => s.id === id) ?? null;
-
-const countryName = (code) => COUNTRY_NAMES[code] ?? code ?? "";
 
 /**
  * Find an order by reference, tolerating case and punctuation. A customer
@@ -125,15 +95,12 @@ function lookupOrder(ref) {
   if (!ref) return null;
   const direct = getOrder(ref);
   if (direct) return direct;
-  const wanted = normaliseRef(ref);
+  const wanted = normaliseReference(ref);
   if (!wanted) return null;
-  return listOrders().find((o) => normaliseRef(o.reference) === wanted) ?? null;
+  return listOrders().find((o) => normaliseReference(o.reference) === wanted) ?? null;
 }
 
 /* --- Small shared pieces --------------------------------------------------- */
-
-const statusBadge = (status) =>
-  el(`span.badge.${STATUS_TONE[status] ?? "badge"}`, {}, STATUS_LABEL[status] ?? status);
 
 /**
  * Copy-to-clipboard button. `copyText` resolves false when the clipboard is
@@ -553,13 +520,6 @@ function nextStatus(order) {
   if (index === -1) return null; // cancelled / refunded: nothing follows
   const next = HAPPY_PATH[index + 1] ?? null;
   return next && canTransition(order.status, next) ? next : null;
-}
-
-/** Keep every parcel's status in step with the order it belongs to. */
-function purchaseOrderPatch(order, to) {
-  const poStatus = PO_STATUS_ON[to];
-  if (!poStatus || !order.purchaseOrders) return {};
-  return { purchaseOrders: order.purchaseOrders.map((po) => ({ ...po, status: poStatus })) };
 }
 
 function simulateNext(order) {
