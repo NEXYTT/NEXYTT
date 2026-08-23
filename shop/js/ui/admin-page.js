@@ -430,7 +430,7 @@ const PRODUCT_COLUMNS = [
     key: "title",
     label: "Producto",
     sort: (c) => c.title.toLowerCase(),
-    cell: (c) => el("td", { style: { minWidth: "220px" } }, [
+    cell: (c) => el("td", { style: { minWidth: "190px" } }, [
       el("a", { href: `product.html?slug=${encodeURIComponent(c.slug)}`, style: { color: "inherit", fontWeight: "600" } }, c.title),
       el("div.text-xs.subtle", {}, `${c.brand} · ${c.categoryLabel}`),
     ]),
@@ -439,27 +439,30 @@ const PRODUCT_COLUMNS = [
     key: "supplier",
     label: "Proveedor",
     sort: (c) => supplierName(c.supplierId).toLowerCase(),
-    cell: (c) => el("td.text-sm", { style: { minWidth: "150px" } }, supplierName(c.supplierId)),
+    cell: (c) => el("td.text-sm", { style: { minWidth: "128px" } }, supplierName(c.supplierId)),
   },
   { key: "price", label: "Precio", num: true, sort: (c) => c.price, cell: (c) => el("td.num", {}, money(c.price)) },
   { key: "supplierCost", label: "Coste", num: true, sort: (c) => c.supplierCost, cell: (c) => el("td.num.muted", {}, money(c.supplierCost)) },
   {
     key: "supplierShipping",
-    label: "Envío prov.",
+    label: "Envío",
+    hint: "Lo que el proveedor nos cobra por mandar la unidad",
     num: true,
     sort: (c) => c.supplierShipping,
     cell: (c) => el("td.num.muted", {}, c.supplierShipping ? money(c.supplierShipping) : "incluido"),
   },
   {
     key: "margin",
-    label: "Margen unit.",
+    label: "Margen",
+    hint: "Contribución por unidad, ya descontados IVA, proveedor, comisión, CAC y reserva de reembolso",
     num: true,
     sort: (c) => c.margin,
     cell: (c) => el("td.num", {}, [signedMoney(c.margin)]),
   },
   {
     key: "marginRate",
-    label: "% margen",
+    label: "%",
+    hint: "Margen unitario sobre el ingreso neto",
     num: true,
     sort: (c) => c.marginRate,
     cell: (c) => el("td.num", { class: c.marginRate < 0 ? "text-loss" : "" }, percent(c.marginRate, { decimals: 1 })),
@@ -474,6 +477,7 @@ const PRODUCT_COLUMNS = [
   {
     key: "breakEvenRoas",
     label: "ROAS eq.",
+    hint: "Euros de ingreso que debe devolver cada euro de publicidad para no perder dinero",
     num: true,
     // `null` means unreachable at any spend — sorts to the worst end, not the top.
     sort: (c) => (c.breakEvenRoas === null ? Infinity : c.breakEvenRoas),
@@ -484,7 +488,8 @@ const PRODUCT_COLUMNS = [
   },
   {
     key: "suggestedPrice",
-    label: "P. sugerido",
+    label: "Sugerido",
+    hint: "Precio que alcanzaría el margen objetivo con este CAC, redondeado al ,99 superior",
     num: true,
     sort: (c) => c.suggestedPrice,
     cell: (c) => el("td.num", { title: `Precio que alcanzaría el ${percent(c.targetMargin, { decimals: 0 })} con este CAC, redondeado al ,99 superior.` }, money(c.suggestedPrice)),
@@ -492,6 +497,7 @@ const PRODUCT_COLUMNS = [
   {
     key: "priceGap",
     label: "Desvío",
+    hint: "Diferencia entre el precio actual y el sugerido",
     num: true,
     sort: (c) => c.priceGapRate,
     // Positive = we already charge above what the target needs. Negative = the
@@ -505,9 +511,13 @@ const PRODUCT_COLUMNS = [
     key: "verdict",
     label: "Veredicto",
     sort: (c) => VERDICT_RANK[c.verdict],
+    // The reasons live in the tooltip, not in a second visible line: printed,
+    // they pushed a twelve-column table past any laptop screen, and the policy
+    // behind them is spelled out in full under the table anyway.
     cell: (c) => el("td", {}, [
-      verdictBadge(c.verdict),
-      el("div.text-xs.subtle", { style: { marginTop: "var(--space-1)", maxWidth: "26ch" } }, c.reasons[0]?.text ?? ""),
+      el(`span.badge.${VERDICT_TONE[c.verdict]}`, {
+        title: c.reasons.map((r) => r.text).join(" "),
+      }, VERDICT_LABEL[c.verdict]),
     ]),
   },
 ];
@@ -547,6 +557,7 @@ function sortHeader(column) {
       dataset: { sortKey: column.key },
       onclick: () => toggleSort(column.key),
       "aria-label": `Ordenar por ${column.label}`,
+      title: column.hint ?? null,
       style: {
         display: "inline-flex",
         alignItems: "center",
@@ -1230,10 +1241,10 @@ function paintSimulator() {
         note: "para no perder dinero",
         tone: sim.roas !== null && sim.breakEvenRoas !== null && sim.roas >= sim.breakEvenRoas ? "win" : "loss",
       }),
-      kpi("Punto de equilibrio", sim.breakEvenOrders === null ? "inalcanzable" : `${sim.breakEvenOrders} pedidos`, {
+      kpi("Punto de equilibrio", sim.breakEvenOrders === null ? "—" : String(sim.breakEvenOrders), {
         note: shortfall === null
           ? "ningún volumen cubre el gasto"
-          : shortfall <= 0 ? `${Math.abs(shortfall)} pedidos de colchón` : `faltan ${shortfall} pedidos`,
+          : shortfall <= 0 ? `pedidos · ${Math.abs(shortfall)} de colchón` : `pedidos · faltan ${shortfall}`,
         tone: shortfall !== null && shortfall <= 0 ? "win" : "loss",
       }),
       kpi("CAC máximo", money(sim.maxCacPerOrder), { note: "lo máximo pagable por pedido" }),
