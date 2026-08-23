@@ -310,8 +310,8 @@ function renderSummary() {
         note: "antes de publicidad",
         tone: figures.grossProfit >= 0 ? "win" : "loss",
       }),
-      kpi("Margen medio", percent(figures.marginRate), {
-        note: `sobre ${money(figures.revenueNet)} netos`,
+      kpi("Margen bruto", percent(figures.marginRate), {
+        note: `sobre ${money(figures.revenueNet)} netos, sin publicidad`,
       }),
       kpi("Pedidos", String(figures.orders), {
         note: figures.cancelled ? `${figures.cancelled} fuera del cómputo` : "en el periodo",
@@ -320,6 +320,14 @@ function renderSummary() {
       kpi("Unidades", String(figures.units), {
         note: figures.orders ? `${(figures.units / figures.orders).toFixed(2)} por pedido` : "—",
       }),
+    ]),
+
+    // The single most misread number on this page: the summary margin is gross,
+    // the catalogue margin is after acquisition cost. Saying so once, here,
+    // stops the two tabs looking like they contradict each other.
+    el("p.text-xs.subtle", {}, [
+      el("strong", {}, "Ojo con el margen: "),
+      `arriba es bruto — ingreso neto menos proveedor y comisión, sin publicidad. En la pestaña de productos el margen ya descuenta el CAC de ${money(state.adCostPerOrder)}, y por eso sale bastante más bajo (${percent(summary.avgMarginRate, { decimals: 1 })} de media ponderada). El simulador es el único sitio donde ambas conviven en la misma cuenta.`,
     ]),
 
     el("div", {
@@ -783,3 +791,641 @@ async function importCsv(file) {
     fileInput.value = "";
   }
 }
+
+/* --- Tab: PROVEEDORES ------------------------------------------------------ */
+
+/** One factor bar inside a supplier card, showing the raw rate and how close it is to its ceiling. */
+function riskFactor(label, rawText, ratio, ceilingText) {
+  const colour = ratio >= 0.66 ? "var(--loss)" : ratio >= 0.33 ? "var(--warn)" : "var(--win)";
+  return barRow(label, rawText, ratio, { hint: `${percent(ratio, { decimals: 0 })} del techo tolerable (${ceilingText})`, colour });
+}
+
+function supplierCard(card) {
+  const { supplier } = card;
+  const { weights } = RISK_MODEL;
+
+  return el("article.card.card--pad", { style: { display: "grid", gap: "var(--space-5)", alignContent: "start" } }, [
+    el("div.row.row--between.row--wrap", { style: { gap: "var(--space-3)" } }, [
+      el("div", { style: { minWidth: "0" } }, [
+        el("h3", { style: { fontSize: "var(--text-lg)" } }, supplier.name),
+        el("p.text-xs.subtle", { style: { marginTop: "var(--space-1)" } },
+          `${supplier.platform} · ${supplier.country} · desde ${supplier.since} · ${supplier.paymentTerms}`),
+      ]),
+      el("div", { style: { textAlign: "right", flex: "none" } }, [
+        el(`span.badge.${card.band.tone}`, {}, `${card.band.label} · ${card.riskScore}/100`),
+        el("div.text-xs.subtle", { style: { marginTop: "var(--space-1)" } }, `★ ${supplier.rating.toFixed(1)}`),
+      ]),
+    ]),
+
+    el("div.kpi-grid", { style: { gap: "var(--space-3)" } }, [
+      kpi("Referencias", String(card.productCount), { note: `${card.stockUnits} uds. en stock` }),
+      kpi("Coste del surtido", money(card.totalCost), { note: "una unidad de cada" }),
+      kpi("Plazo de entrega", `${card.leadTimeDays[0]}–${card.leadTimeDays[1]} d`, { note: `media ${card.avgLeadDays} días` }),
+      kpi("Margen medio", percent(card.avgMarginRate), {
+        note: `${card.verdicts.escalar} escalar / ${card.verdicts.retirar} retirar`,
+        tone: card.avgMarginRate > 0 ? "win" : "loss",
+      }),
+    ]),
+
+    el("div", { style: { display: "grid", gap: "var(--space-4)" } }, [
+      el("h4", { style: { fontSize: "var(--text-sm)" } }, "De dónde viene el riesgo"),
+      riskFactor(
+        `Defectuosos (peso ${percent(weights.defectRate, { decimals: 0 })})`,
+        percent(card.defectRate, { decimals: 1 }),
+        card.riskFactors.defectRate,
+        percent(RISK_MODEL.ceilings.defectRate, { decimals: 0 })
+      ),
+      riskFactor(
+        `Disputas (peso ${percent(weights.disputeRate, { decimals: 0 })})`,
+        percent(card.disputeRate, { decimals: 1 }),
+        card.riskFactors.disputeRate,
+        percent(RISK_MODEL.ceilings.disputeRate, { decimals: 0 })
+      ),
+      riskFactor(
+        `Plazo peor caso (peso ${percent(weights.leadTime, { decimals: 0 })})`,
+        `${card.maxLeadDays} días`,
+        card.riskFactors.leadTime,
+        `${RISK_MODEL.ceilings.leadTimeDays} días`
+      ),
+      el("p.text-xs.subtle", {}, [
+        el("strong", {}, "Exposición: "),
+        `${money(card.stockAtCost)} de stock pagado a este proveedor. Si deja de servir, hay que reubicar ${card.productCount} referencias.`,
+      ]),
+    ]),
+
+    tableWrap(
+      el("table.table", { style: { minWidth: "480px" } }, [
+        el("thead", {}, [
+          el("tr", {}, [
+            el("th", { scope: "col" }, "Le compramos"),
+            el("th.num", { scope: "col" }, "Coste"),
+            el("th.num", { scope: "col" }, "Precio"),
+            el("th.num", { scope: "col" }, "Margen"),
+            el("th", { scope: "col" }, "Veredicto"),
+          ]),
+        ]),
+        el("tbody", {}, card.products.map((p) =>
+          el("tr", {}, [
+            el("td", {}, [
+              el("a", { href: `product.html?slug=${encodeURIComponent(p.slug)}`, style: { color: "inherit" } }, p.title),
+            ]),
+            el("td.num.muted", {}, money(p.landedCost)),
+            el("td.num", {}, money(p.price)),
+            el("td.num", {}, [signedMoney(p.margin)]),
+            el("td", {}, [verdictBadge(p.verdict)]),
+          ])
+        )),
+      ])
+    ),
+
+    el("p.text-xs.subtle", { style: { margin: 0 } }, supplier.notes),
+  ]);
+}
+
+function renderSuppliers() {
+  const cards = suppliers
+    .map((s) => supplierScorecard(s, state.catalog, econOpts()))
+    .sort((a, b) => b.risk - a.risk);
+
+  const worst = cards[0];
+
+  return el("div.stack", { style: { "--stack-gap": "var(--space-5)" } }, [
+    el("div.card.card--pad", {}, [
+      el("h2", { style: { fontSize: "var(--text-lg)" } }, "Riesgo de proveedor"),
+      el("p.text-sm.muted", { style: { marginTop: "var(--space-2)", maxWidth: "80ch" } }, [
+        "En dropshipping el proveedor es el producto: el plazo y la tasa de defectos mueven la cuenta de resultados más que el precio de venta. ",
+        `El riesgo es un compuesto 0–100 de tres factores normalizados contra su techo tolerable y ponderados `,
+        `${percent(RISK_MODEL.weights.defectRate, { decimals: 0 })} defectos, `,
+        `${percent(RISK_MODEL.weights.disputeRate, { decimals: 0 })} disputas y `,
+        `${percent(RISK_MODEL.weights.leadTime, { decimals: 0 })} plazo. `,
+        "Ordenados de peor a mejor: el de arriba es el que hay que sustituir primero.",
+      ]),
+      el("div.kpi-grid", { style: { marginTop: "var(--space-5)" } }, [
+        kpi("Proveedores", String(cards.length), { note: `${cards.filter((c) => c.band.id === "alto").length} en riesgo alto` }),
+        kpi("Mayor riesgo", worst?.name ?? "—", { note: `${worst?.riskScore ?? 0}/100`, tone: "loss" }),
+        kpi("Stock a coste", money(cards.reduce((n, c) => n + c.stockAtCost, 0)), { note: "capital inmovilizado" }),
+        kpi("Plazo más largo", `${Math.max(...cards.map((c) => c.maxLeadDays))} d`, { note: "peor caso del catálogo" }),
+      ]),
+    ]),
+
+    el("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 380px), 1fr))",
+        gap: "var(--space-5)",
+        alignItems: "start",
+      },
+    }, cards.map(supplierCard)),
+  ]);
+}
+
+/* --- Tab: PEDIDOS ---------------------------------------------------------- */
+
+const STATUS_TONE = {
+  pending_payment: "badge--warn",
+  paid: "badge--info",
+  routing: "badge--info",
+  fulfilled: "badge--accent",
+  shipped: "badge--accent",
+  delivered: "badge--win",
+  cancelled: "badge--loss",
+  refunded: "badge--loss",
+};
+
+/**
+ * Purchase orders still sitting on our side. `createOrder` opens every PO as
+ * "queued"; `routeToSuppliers` is what turns them into an accepted parcel with
+ * a carrier and a tracking number. Anything still queued is money already
+ * collected from a customer whose goods nobody has ordered yet.
+ */
+function pendingPurchaseOrders(orders) {
+  return orders.flatMap((order) =>
+    (order.purchaseOrders ?? [])
+      .filter((po) => po.status === "queued" && order.status !== "cancelled" && order.status !== "refunded")
+      .map((po) => ({ order, po }))
+  );
+}
+
+function routePurchaseOrder(order) {
+  // The state machine owns the rules; the button only asks whether it may.
+  if (!canTransition(order.status, "routing")) {
+    toast(`Un pedido en «${STATUS_LABEL[order.status]}» no se puede enrutar todavía.`, { variant: "warn", title: "Transición no válida" });
+    return;
+  }
+  const routed = routeToSuppliers(order);
+  saveOrder(routed);
+  renderTab();
+  renderHeadline();
+  toast(`${routed.purchaseOrders.length} orden(es) de compra enviadas con número de seguimiento.`, {
+    variant: "win",
+    title: `${routed.reference} enrutado`,
+  });
+}
+
+function ordersEmptyState() {
+  return el("div.card", {}, [
+    el("div.empty", {}, [
+      el("div.empty__icon", { "aria-hidden": "true" }, [icon("package", { size: 40 })]),
+      el("h2", { style: { color: "var(--fg)", fontSize: "var(--text-lg)" } }, "Ningún pedido todavía"),
+      el("p.text-sm", { style: { marginTop: "var(--space-2)", maxWidth: "56ch", marginInline: "auto" } },
+        "El libro de pedidos vive en este navegador. Pasa por el carrito o genera uno de ejemplo desde «Mis pedidos» y volverá aquí con su margen calculado."),
+      el("div.row.row--wrap", { style: { gap: "var(--space-3)", justifyContent: "center", marginTop: "var(--space-5)" } }, [
+        el("a.btn.btn--primary", { href: "orders.html" }, [icon("sparkle", { size: 18 }), el("span", {}, "Generar un pedido de ejemplo")]),
+        el("a.btn.btn--ghost", { href: "index.html" }, "Ir al catálogo"),
+      ]),
+    ]),
+  ]);
+}
+
+function renderOrders() {
+  const orders = listOrders();
+  if (!orders.length) return ordersEmptyState();
+
+  const agg = aggregateEconomics(orders);
+  const pending = pendingPurchaseOrders(orders);
+  const pendingCost = pending.reduce((n, { po }) => n + po.cost, 0);
+
+  return el("div.stack", { style: { "--stack-gap": "var(--space-5)" } }, [
+    el("div.kpi-grid", {}, [
+      kpi("Pedidos vivos", String(agg.orders), { note: agg.cancelled ? `${agg.cancelled} cancelados o reembolsados` : "ninguno cancelado" }),
+      kpi("Facturación", money(agg.revenueGross), { note: `${money(agg.tax)} de IVA` }),
+      kpi("Coste de mercancía", money(agg.goodsCost), { note: `+ ${money(agg.processingFees)} de comisiones` }),
+      kpi("Beneficio bruto", money(agg.grossProfit), { note: percent(agg.marginRate), tone: agg.grossProfit >= 0 ? "win" : "loss" }),
+    ]),
+
+    section(
+      "Órdenes de compra pendientes de enviar",
+      pending.length
+        ? `${pending.length} orden(es) por ${money(pendingCost)} esperando a que alguien las mande al proveedor. Hasta que se enruten, el cliente ha pagado y nadie ha comprado la mercancía.`
+        : "Todas las órdenes de compra están enrutadas. Cada paquete tiene transportista y número de seguimiento.",
+      pending.length
+        ? tableWrap(el("table.table", { style: { minWidth: "700px" } }, [
+            el("thead", {}, [
+              el("tr", {}, [
+                el("th", { scope: "col" }, "Orden de compra"),
+                el("th", { scope: "col" }, "Proveedor"),
+                el("th.num", { scope: "col" }, "Líneas"),
+                el("th.num", { scope: "col" }, "Coste"),
+                el("th", { scope: "col" }, "Pedido"),
+                el("th", { scope: "col" }, "Acción"),
+              ]),
+            ]),
+            el("tbody", {}, pending.map(({ order, po }) => {
+              const routable = canTransition(order.status, "routing");
+              return el("tr", {}, [
+                el("td.mono.text-xs", { style: { overflowWrap: "anywhere" } }, po.id),
+                el("td.text-sm", {}, supplierName(po.supplierId)),
+                el("td.num", {}, String(po.lines.length)),
+                el("td.num", {}, money(po.cost)),
+                el("td", {}, [
+                  el("a.mono.text-xs", { href: `order.html?ref=${encodeURIComponent(order.reference)}`, style: { color: "inherit" } }, order.reference),
+                  el("div", { style: { marginTop: "var(--space-1)" } }, [
+                    el(`span.badge.${STATUS_TONE[order.status] ?? "badge"}`, {}, STATUS_LABEL[order.status]),
+                  ]),
+                ]),
+                el("td", {}, [
+                  el("button.btn.btn--primary.btn--sm", {
+                    type: "button",
+                    disabled: !routable,
+                    title: routable
+                      ? "Simula la llamada a la API del proveedor: asigna transportista y número de seguimiento."
+                      : "El pedido tiene que estar pagado para poder enrutarlo.",
+                    "aria-label": `Enrutar la orden ${po.id} a ${supplierName(po.supplierId)}`,
+                    onclick: () => routePurchaseOrder(order),
+                  }, [icon("truck", { size: 16 }), el("span", {}, "Enrutar")]),
+                ]),
+              ]);
+            })),
+          ]))
+        : el("p.text-sm.subtle", { style: { padding: "0 var(--space-5) var(--space-5)" } }, "Nada que hacer aquí."),
+      { flush: true }
+    ),
+
+    section(
+      "Margen pedido a pedido",
+      "Cifras congeladas en el momento de la compra: si mañana sube el coste del proveedor, este pedido sigue contando lo que costó de verdad.",
+      tableWrap(el("table.table", { style: { minWidth: "860px" } }, [
+        el("thead", {}, [
+          el("tr", {}, [
+            el("th", { scope: "col" }, "Referencia"),
+            el("th", { scope: "col" }, "Fecha"),
+            el("th", { scope: "col" }, "Estado"),
+            el("th.num", { scope: "col" }, "Uds."),
+            el("th.num", { scope: "col" }, "Bruto"),
+            el("th.num", { scope: "col" }, "Neto"),
+            el("th.num", { scope: "col" }, "Mercancía"),
+            el("th.num", { scope: "col" }, "Comisión"),
+            el("th.num", { scope: "col" }, "Margen"),
+            el("th.num", { scope: "col" }, "%"),
+          ]),
+        ]),
+        el("tbody", {}, orders.map((order) => {
+          const e = order.economics;
+          const dead = order.status === "cancelled" || order.status === "refunded";
+          return el("tr", { style: dead ? { opacity: "0.55" } : {} }, [
+            el("td", {}, [
+              el("a.mono.text-xs", { href: `order.html?ref=${encodeURIComponent(order.reference)}`, style: { color: "inherit", overflowWrap: "anywhere" } }, order.reference),
+            ]),
+            el("td.text-xs.muted", { style: { whiteSpace: "nowrap" } }, dateOnly(order.createdAt)),
+            el("td", {}, [el(`span.badge.${STATUS_TONE[order.status] ?? "badge"}`, {}, STATUS_LABEL[order.status])]),
+            el("td.num", {}, String(order.lines.reduce((n, l) => n + l.qty, 0))),
+            el("td.num", {}, money(e.revenueGross)),
+            el("td.num.muted", {}, money(e.revenueNet)),
+            el("td.num.muted", {}, money(e.goodsCost)),
+            el("td.num.muted", {}, money(e.processingFee)),
+            el("td.num", {}, [dead ? el("span.muted", {}, "—") : signedMoney(e.grossProfit)]),
+            el("td.num", { class: e.grossProfit < 0 ? "text-loss" : "" }, dead ? "—" : percent(e.marginRate, { decimals: 1 })),
+          ]);
+        })),
+      ])),
+      { flush: true }
+    ),
+
+    el("p.text-xs.subtle", {},
+      "El margen por pedido no descuenta publicidad: el pedido no sabe cuánto costó traerlo. Ese descuento se hace en el simulador, donde el gasto es una entrada."),
+  ]);
+}
+
+/* --- Tab: SIMULADOR -------------------------------------------------------- */
+
+const simOutput = el("div");
+
+const simOrdersField = sliderField({
+  id: "sim-orders",
+  label: "Pedidos al mes",
+  hint: "Volumen que asumimos vender. Un pedido, una unidad.",
+  min: 0, max: 2000, step: 10,
+  value: state.sim.orders,
+  onInput: (value) => {
+    state.sim.orders = Math.round(value);
+    persist();
+    paintSimulator();
+    renderHeadline();
+  },
+});
+
+const simSpendField = sliderField({
+  id: "sim-spend",
+  label: "Gasto en publicidad",
+  hint: "Presupuesto mensual de campañas. Es coste fijo del mes, no por pedido.",
+  min: 0, max: 20000, step: 100,
+  value: state.sim.adSpend / 100,
+  suffix: "€",
+  onInput: (euros) => {
+    state.sim.adSpend = Math.round(euros * 100);
+    persist();
+    paintSimulator();
+    renderHeadline();
+  },
+});
+
+const simRefundField = sliderField({
+  id: "sim-refund",
+  label: "Tasa de reembolso",
+  hint: "Porcentaje de pedidos que acaban devueltos. Por debajo del 2% no es realista con envío desde China.",
+  min: 0, max: 15, step: 0.5,
+  value: +(state.sim.refundRate * 100).toFixed(1),
+  suffix: "%",
+  onInput: (pct) => {
+    state.sim.refundRate = pct / 100;
+    persist();
+    paintSimulator();
+  },
+});
+
+const mixSelect = el("select.select", {
+  id: "sim-mix",
+  onchange: () => {
+    state.sim.mix = mixSelect.value;
+    persist();
+    paintSimulator();
+  },
+}, Object.values(MIX_PRESETS).map((preset) =>
+  el("option", { value: preset.id, selected: preset.id === state.sim.mix }, preset.label)
+));
+
+const mixHint = el("p.field__hint", {}, MIX_PRESETS[state.sim.mix].hint);
+
+const simShell = el("div.stack", { style: { "--stack-gap": "var(--space-5)" } }, [
+  el("div.card.card--pad", {}, [
+    el("h2", { style: { fontSize: "var(--text-lg)" } }, "Escenario del mes"),
+    el("p.text-sm.muted", { style: { marginTop: "var(--space-2)", maxWidth: "80ch" } }, [
+      "Cuatro entradas y una cuenta de resultados completa. Cada línea dice de dónde sale, ",
+      "y las líneas suman exactamente el beneficio: no hay ningún ajuste escondido. ",
+      `Se asume envío gratis para el cliente (lo es a partir de ${money(SHIPPING_ZONES.ES_PENINSULA.freeOver)} en península) `,
+      "y el envío del proveedor cargado como coste, así que el escenario peca de pesimista, no de optimista.",
+    ]),
+    el("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+        gap: "var(--space-5)",
+        marginTop: "var(--space-5)",
+      },
+    }, [
+      simOrdersField,
+      simSpendField,
+      simRefundField,
+      el("div.field", { style: { minWidth: "0" } }, [
+        el("label.label", { for: "sim-mix" }, "Mix de productos"),
+        mixSelect,
+        mixHint,
+      ]),
+    ]),
+  ]),
+
+  simOutput,
+]);
+
+/** The P&L, rendered so a subtotal and a total read differently from a line item. */
+function profitAndLoss(sim) {
+  const rowStyle = (kind) => {
+    if (kind === "total") return { borderTop: "2px solid var(--border-strong)", fontWeight: "800" };
+    if (kind === "subtotal") return { borderTop: "1px solid var(--border-strong)", fontWeight: "700" };
+    return {};
+  };
+
+  return tableWrap(el("table.table", { style: { minWidth: "620px" } }, [
+    el("thead", {}, [
+      el("tr", {}, [
+        el("th", { scope: "col" }, "Concepto"),
+        el("th", { scope: "col" }, "De dónde sale"),
+        el("th.num", { scope: "col" }, "Importe"),
+      ]),
+    ]),
+    el("tbody", {}, sim.lines.map((line) =>
+      el("tr", { style: rowStyle(line.kind) }, [
+        el("td", { style: { minWidth: "170px" } }, [
+          el("span", {}, line.label),
+          el("div.text-xs.subtle", { style: { fontWeight: "400", maxWidth: "44ch" } }, line.note),
+        ]),
+        el("td.mono.text-xs.muted", { style: { textAlign: "left", minWidth: "180px" } }, line.formula),
+        el("td.num", {
+          class: line.kind === "total" ? (line.amount >= 0 ? "text-win" : "text-loss") : "",
+          style: { whiteSpace: "nowrap" },
+        }, money(line.amount)),
+      ])
+    )),
+  ]));
+}
+
+function paintSimulator() {
+  const sim = simulateMonth(state.catalog, { ...state.sim, targetMargin: state.targetMargin });
+  mixHint.textContent = MIX_PRESETS[state.sim.mix].hint;
+
+  const profitable = sim.profit >= 0;
+  const shortfall = sim.breakEvenOrders === null ? null : sim.breakEvenOrders - sim.orders;
+
+  replace(simOutput, [
+    el("div.kpi-grid", {}, [
+      kpi("Beneficio del mes", money(sim.profit), {
+        note: profitable ? "el mes cierra en positivo" : "el mes cierra en pérdidas",
+        tone: profitable ? "win" : "loss",
+      }),
+      kpi("Margen neto", percent(sim.marginRate), { note: `sobre ${money(sim.revenueNet)} netos` }),
+      kpi("ROAS actual", sim.roas === null ? "sin gasto" : `${sim.roas.toFixed(2)}×`, {
+        note: `${money(sim.adCostPerOrder)} de CAC por pedido`,
+      }),
+      kpi("ROAS necesario", roasText(sim.breakEvenRoas), {
+        note: "para no perder dinero",
+        tone: sim.roas !== null && sim.breakEvenRoas !== null && sim.roas >= sim.breakEvenRoas ? "win" : "loss",
+      }),
+      kpi("Punto de equilibrio", sim.breakEvenOrders === null ? "inalcanzable" : `${sim.breakEvenOrders} pedidos`, {
+        note: shortfall === null
+          ? "ningún volumen cubre el gasto"
+          : shortfall <= 0 ? `${Math.abs(shortfall)} pedidos de colchón` : `faltan ${shortfall} pedidos`,
+        tone: shortfall !== null && shortfall <= 0 ? "win" : "loss",
+      }),
+      kpi("CAC máximo", money(sim.maxCacPerOrder), { note: "lo máximo pagable por pedido" }),
+    ]),
+
+    section(
+      "Cuenta de resultados del mes",
+      `${sim.orders} pedidos · ticket medio ${money(sim.averageOrderValue)} · mix «${MIX_PRESETS[state.sim.mix].label}»${sim.mixCollapsed ? " (ningún producto tiene contribución positiva con este CAC: se ha repartido a partes iguales)" : ""}.`,
+      [
+        profitAndLoss(sim),
+        el("div", { style: { padding: "var(--space-4) var(--space-5) var(--space-5)", display: "grid", gap: "var(--space-3)" } }, [
+          el("p.text-xs", { class: sim.check.balanced ? "text-win" : "text-loss" }, [
+            icon(sim.check.balanced ? "check" : "close", { size: 14 }),
+            el("span", { style: { marginLeft: "var(--space-2)" } },
+              sim.check.balanced
+                ? "Comprobado: las líneas de ingreso y coste suman exactamente el beneficio, sin desviación de redondeo."
+                : `Descuadre de ${money(sim.check.delta)}. Esto es un error, no un redondeo.`),
+          ]),
+          el("p.text-xs.subtle", {},
+            `Reembolsos: ${sim.refundedOrders} pedidos al ${percent(sim.refundRate, { decimals: 1 })}. Solo se anula su ingreso neto; su mercancía y su comisión siguen contadas arriba porque no vuelven.`),
+        ]),
+      ],
+      { flush: true }
+    ),
+
+    el("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
+        gap: "var(--space-5)",
+        alignItems: "start",
+      },
+    }, [
+      section("De dónde sale el punto de equilibrio", null, breakEvenExplainer(sim)),
+      section(
+        "Reparto del volumen",
+        "Los diez productos que más facturan en este escenario.",
+        tableWrap(el("table.table", { style: { minWidth: "440px" } }, [
+          el("thead", {}, [
+            el("tr", {}, [
+              el("th", { scope: "col" }, "Producto"),
+              el("th.num", { scope: "col" }, "Pedidos"),
+              el("th.num", { scope: "col" }, "Bruto"),
+              el("th.num", { scope: "col" }, "Contribución"),
+            ]),
+          ]),
+          el("tbody", {}, sim.byProduct.slice(0, 10).map((line) =>
+            el("tr", {}, [
+              el("td.text-sm", {}, [
+                el("a", { href: `product.html?slug=${encodeURIComponent(line.product.slug)}`, style: { color: "inherit" } }, line.product.title),
+              ]),
+              el("td.num", {}, String(line.orders)),
+              el("td.num", {}, money(line.revenueGross)),
+              el("td.num", {}, [signedMoney(line.contribution)]),
+            ])
+          )),
+        ])),
+        { flush: true }
+      ),
+    ]),
+  ]);
+}
+
+/**
+ * The break-even walk-through. This is the part of the page that has to be
+ * followable with a pen: each step shows its own arithmetic.
+ */
+function breakEvenExplainer(sim) {
+  const contribution = Math.round(sim.contributionPerOrder);
+  const steps = [
+    ["1. Ingreso neto por pedido", money(sim.orders ? Math.round(sim.revenueNet / sim.orders) : 0), `ticket ${money(sim.averageOrderValue)} menos el IVA`],
+    ["2. Menos mercancía y comisión", money(sim.orders ? -Math.round((sim.cogs + sim.fees) / sim.orders) : 0), "coste del proveedor, su envío y la pasarela"],
+    ["3. Menos reembolsos", money(sim.orders ? -Math.round(sim.refundLoss / sim.orders) : 0), `${percent(sim.refundRate, { decimals: 1 })} del ingreso neto`],
+    ["4. Contribución por pedido", money(contribution), "lo que queda para pagar la publicidad"],
+    ["5. Publicidad del mes", money(sim.adSpend), "coste fijo a cubrir"],
+  ];
+
+  return el("div", { style: { display: "grid", gap: "var(--space-3)", marginTop: "var(--space-4)" } }, [
+    ...steps.map(([label, value, note], i) =>
+      el("div.row.row--between", {
+        style: {
+          gap: "var(--space-3)",
+          paddingTop: i === 3 ? "var(--space-3)" : "0",
+          borderTop: i === 3 ? "1px solid var(--border-strong)" : "0",
+        },
+      }, [
+        el("div", { style: { minWidth: "0" } }, [
+          el("span.text-sm", { style: { fontWeight: i === 3 ? "700" : "400" } }, label),
+          el("div.text-xs.subtle", {}, note),
+        ]),
+        el("strong.num.text-sm", { style: { whiteSpace: "nowrap" } }, value),
+      ])
+    ),
+    el("hr.divider"),
+    el("p.text-sm", {}, sim.breakEvenOrders === null
+      ? "Con esta contribución por pedido no hay volumen que cubra la publicidad: cada pedido añade pérdidas. Hay que subir precio, bajar coste o bajar el CAC antes de gastar un euro más."
+      : [
+          el("strong", {}, `${money(sim.adSpend)} ÷ ${money(contribution)} = ${sim.breakEvenOrders} pedidos.`),
+          el("span.muted", {}, ` A partir de ahí cada pedido deja ${money(contribution)} limpios. En ingresos son ${money(sim.breakEvenOrders * sim.averageOrderValue)}, es decir un ROAS de ${roasText(sim.breakEvenRoas)}.`),
+        ]),
+    el("p.text-xs.subtle", {},
+      "El cálculo mantiene fijo el mix: si al escalar cambia qué productos se venden, la contribución media cambia con él."),
+  ]);
+}
+
+function renderSimulator() {
+  paintSimulator();
+  return simShell;
+}
+
+/* --- Tabs and boot ---------------------------------------------------------- */
+
+const TABS = [
+  { id: "resumen", label: "Resumen", glyph: "chart", render: renderSummary },
+  { id: "productos", label: "Productos", glyph: "package", render: renderProducts },
+  { id: "proveedores", label: "Proveedores", glyph: "truck", render: renderSuppliers },
+  { id: "pedidos", label: "Pedidos", glyph: "wallet", render: renderOrders },
+  { id: "simulador", label: "Simulador", glyph: "radar", render: renderSimulator },
+];
+
+const tabStrip = $("#tabs");
+const panel = $("#panel");
+const headline = $("#headline");
+
+function renderTabStrip() {
+  replace(tabStrip, TABS.map((tab) =>
+    el("button.tab", {
+      type: "button",
+      role: "tab",
+      id: `tab-${tab.id}`,
+      "aria-selected": String(tab.id === state.tab),
+      "aria-controls": "panel",
+      onclick: () => selectTab(tab.id),
+    }, [
+      el("span", { "aria-hidden": "true", style: { marginRight: "var(--space-2)", verticalAlign: "-3px" } }, [icon(tab.glyph, { size: 16 })]),
+      el("span", {}, tab.label),
+    ])
+  ));
+}
+
+function renderTab() {
+  const tab = TABS.find((t) => t.id === state.tab) ?? TABS[0];
+  panel.setAttribute("role", "tabpanel");
+  panel.setAttribute("aria-labelledby", `tab-${tab.id}`);
+  replace(panel, [tab.render()]);
+}
+
+function selectTab(id) {
+  state.tab = id;
+  // The hash keeps a reload (and a shared link) on the same tab. `replaceState`
+  // rather than `pushState`: switching tabs is not a navigation the back button
+  // should have to undo five times.
+  history.replaceState(null, "", `#${id}`);
+  renderTabStrip();
+  renderTab();
+}
+
+// Editing the hash by hand (or following a link to `admin.html#simulador` from
+// somewhere already on this page) is a same-document navigation: nothing
+// reloads, so the tab has to be switched here.
+addEventListener("hashchange", () => {
+  const id = location.hash.replace("#", "");
+  if (id && id !== state.tab && TABS.some((t) => t.id === id)) selectTab(id);
+});
+
+/** Compact status chips next to the page title, always in sync with the knobs. */
+function renderHeadline() {
+  const summary = catalogSummary(state.catalog, econOpts());
+  const orders = listOrders();
+  const agg = aggregateEconomics(orders);
+
+  replace(headline, [
+    el("div.row.row--wrap", { style: { gap: "var(--space-2)", justifyContent: "flex-end" } }, [
+      el("span.chip", {}, `${summary.count} referencias`),
+      el("span.chip", {}, `${suppliers.length} proveedores`),
+      el("span.chip", {}, agg.orders ? `${agg.orders} pedidos` : "sin pedidos"),
+      el("span.chip", { title: "Margen medio ponderado del catálogo con el CAC actual" },
+        `margen ${percent(summary.avgMarginRate, { decimals: 1 })}`),
+    ]),
+  ]);
+}
+
+/* --- Boot -------------------------------------------------------------------- */
+
+mountHeader({ active: "admin" });
+
+$("#crumbs").append(breadcrumbs([{ label: "Inicio", href: "index.html" }, { label: "Panel de operación" }]));
+
+const requestedTab = location.hash.replace("#", "");
+if (TABS.some((t) => t.id === requestedTab)) state.tab = requestedTab;
+
+renderHeadline();
+renderTabStrip();
+renderTab();
+mountFooter();

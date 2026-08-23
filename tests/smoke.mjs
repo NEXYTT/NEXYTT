@@ -49,6 +49,7 @@ const ALL_PAGES = [
   "shop/cart.html",
   "shop/checkout.html",
   "shop/orders.html",
+  "shop/order.html",
   "shop/admin.html",
 ];
 

@@ -8,12 +8,15 @@ y sin proceso de compilación: HTML, CSS y ES modules nativos.
 > Esta documentación vive aquí, en `PROYECTO.md`, para no tocarlo.
 
 ```bash
-python3 -m http.server 8000     # y abre http://localhost:8000
-node --test tests/              # suite de lógica pura
-node tests/smoke.mjs            # prueba de humo de todas las páginas en Chromium
+npm start                # servidor estático en http://localhost:8000
+npm test                 # lógica pura: node --test
+npm run test:smoke       # las 16 páginas en Chromium headless
+npm run test:e2e         # flujo de compra completo, de catálogo a pedido
+npm run rtp              # regenera la tabla de RTP medidos
 ```
 
-No hace falta `npm install`. Cualquier página funciona también abriéndola
+**No hace falta `npm install`**: no hay ni una dependencia. El `package.json`
+solo guarda los atajos. Cualquier página funciona también abriéndola
 directamente desde disco.
 
 ---
