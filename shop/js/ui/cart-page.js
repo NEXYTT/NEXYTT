@@ -198,17 +198,19 @@ function renderPromo() {
   if (!promo) return;
 
   replace(promoActive, [
+    // Code and action on one line, the human-readable effect underneath: at 360
+    // px the three of them side by side leave the label ellipsised to nothing.
     el("div.row.row--between", { style: { gap: "var(--space-3)" } }, [
-      el("span.row", { style: { gap: "var(--space-2)", minWidth: "0" } }, [
-        el("span.badge.badge--win", {}, [icon("check", { size: 14 }), el("span.mono", {}, promo.code)]),
-        el("span.text-sm.truncate", {}, promo.label),
-      ]),
+      el("span.badge.badge--win", { style: { minWidth: "0" } },
+        [icon("check", { size: 14 }), el("span.mono.truncate", {}, promo.code)]),
       el("button.btn.btn--ghost.btn--sm", {
         type: "button",
+        style: { flex: "none" },
         "aria-label": `Quitar el código ${promo.code}`,
         onclick: removePromo,
       }, "Quitar"),
     ]),
+    el("p.text-xs.muted", { style: { marginTop: "var(--space-2)" } }, `${promo.label} aplicado al pedido.`),
   ]);
 }
 

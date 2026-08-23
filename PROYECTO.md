@@ -46,16 +46,27 @@ pegar una semilla revelada y recomputar cualquier ronda.
 
 ### Juegos
 
-| Juego | Reglas | RTP |
-| --- | --- | --- |
-| **Neon Reels** | Tragaperras 5×3, 20 líneas, wild, scatter y tiradas gratis | 96% |
-| **Blackjack 21** | 6 barajas, S17, 3:2, doblar, dividir, seguro, rendición | 99,5% |
-| **Ruleta Europea** | Un solo cero, tapete completo con todos los tipos de apuesta | 97,3% |
-| **Dados** | Objetivo ajustable de 2 a 98, multiplicador exacto | 99% |
-| **Crash** | Curva creciente, retirada manual o automática | 99% |
-| **Minas** | 5×5, número de minas configurable, multiplicador combinatorio | 99% |
+| Juego | Reglas | RTP declarado | RTP medido |
+| --- | --- | --- | --- |
+| **Neon Reels** | Tragaperras 5×3, 20 líneas, wild, scatter y tiradas gratis | 96,08% | 96,49% ± 1,03 |
+| **Blackjack 21** | 6 barajas, S17, 3:2, doblar, dividir, seguro, rendición | 99,66% | 99,64% |
+| **Ruleta Europea** | Un solo cero, tapete completo con todos los tipos de apuesta | 97,30% | 97,14% ± 0,36 |
+| **Dados** | Objetivo ajustable de 2 a 98, multiplicador exacto | 99,00% | 98,84% ± 0,35 |
+| **Crash** | Curva creciente, retirada manual o automática | 99,00% | 99,14% ± 0,36 |
+| **Minas** | 5×5, número de minas configurable, multiplicador combinatorio | 99,00% | 98,95% ± 0,31 |
 
-Cada RTP está **medido por simulación de Monte Carlo**, no prometido.
+Cada RTP está **medido por simulación de Monte Carlo**, no prometido. Los
+intervalos son al 95 %, sobre 200.000–400.000 rondas por juego. Regenera la
+tabla con `node tests/rtp-report.mjs`.
+
+Las tolerancias de los tests se **derivan del error estándar** de cada muestra,
+nunca se eligen a mano: una apuesta a rojo y una tirada de dados que paga 49×
+tienen varianzas con órdenes de magnitud de diferencia, y una tolerancia fija
+sería demasiado laxa para una y demasiado estricta para la otra. Además la tabla
+de estrategia básica del blackjack se comprueba por **enumeración exhaustiva** de
+todas las manos de dos cartas contra todas las cartas vistas del crupier, que
+detecta una sola casilla mal — algo que se esconde dentro del ruido de un millón
+de manos simuladas.
 
 ### Cartera y libro mayor
 

@@ -23,13 +23,16 @@
        empty view when there is not. Only one is ever visible. -->
   <div id="cart-view" hidden>
     <div class="cart-layout">
-      <section aria-labelledby="lines-title">
+      <!-- min-width:0 on both columns: once the layout collapses to a single
+           `1fr` track, a grid item's automatic minimum is its content, so any
+           unbreakable row inside would widen the track past the viewport. -->
+      <section aria-labelledby="lines-title" style="min-width: 0">
         <h2 class="visually-hidden" id="lines-title">Productos añadidos</h2>
         <div id="lines"></div>
         <div class="row row--between row--wrap" id="lines-foot" style="margin-top: var(--space-5)"></div>
       </section>
 
-      <aside class="summary" id="summary-host" aria-labelledby="summary-title"></aside>
+      <aside class="summary" id="summary-host" aria-labelledby="summary-title" style="min-width: 0"></aside>
     </div>
   </div>
 
