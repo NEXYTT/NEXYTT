@@ -206,7 +206,7 @@ export function validatePostalCode(value, country) {
  */
 export const PHONE_RULES = {
   ES: { cc: "34", national: /^[6-9]\d{8}$/, example: "612 345 678" },
-  PT: { cc: "351", national: /^[2369]\d{8}$/, example: "912 345 678" },
+  PT: { cc: "351", national: /^[239]\d{8}$/, example: "912 345 678" },
   FR: { cc: "33", national: /^[1-9]\d{8}$/, example: "06 12 34 56 78" },
   DE: { cc: "49", national: /^[1-9]\d{5,11}$/, example: "030 123456" },
   IT: { cc: "39", national: /^(3\d{8,9}|0\d{5,10})$/, example: "312 345 6789" },
@@ -236,10 +236,13 @@ export function validatePhone(value, country) {
     // Accept +34…, 0034… and the bare national number, all as the same thing.
     if (digits.startsWith(`00${rule.cc}`)) digits = digits.slice(2 + rule.cc.length);
     else if (raw.startsWith("+") && digits.startsWith(rule.cc)) digits = digits.slice(rule.cc.length);
-    // Trunk zero: written locally, dropped in the international form.
-    const national = digits.startsWith("0") ? digits.slice(1) : digits;
+    // Trunk zero: dropped in the international form almost everywhere — but not
+    // in Italy, where the leading 0 of a landline is part of the number. So try
+    // both readings and keep whichever the country's rule accepts.
+    const stripped = digits.startsWith("0") ? digits.slice(1) : digits;
+    const national = [digits, stripped].find((candidate) => rule.national.test(candidate));
 
-    if (!rule.national.test(national)) {
+    if (!national) {
       return fail(`Ese teléfono no encaja con el formato del país. Ejemplo: ${rule.example}.`);
     }
     return ok(`+${rule.cc}${national}`);

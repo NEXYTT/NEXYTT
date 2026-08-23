@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es" data-theme="shop">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis pedidos · NEXYTT Store</title>
+<meta name="description" content="Todos tus pedidos de NEXYTT Store en un vistazo: referencia, fecha, artículos, total y estado de cada uno, con filtro por estado y búsqueda por referencia.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+<main class="container container--wide" id="app" style="padding-block: var(--space-6) var(--space-8)">
+
+  <div id="crumbs"></div>
+
+  <div class="stack" style="--stack-gap: var(--space-6)">
+    <header>
+      <h1>Mis pedidos</h1>
+      <p class="muted text-sm" id="lede">Cargando tus pedidos…</p>
+    </header>
+
+    <!-- Filter and search are built once by orders-page.js and left alone, so
+         typing in the search box never loses focus when the list repaints. -->
+    <div class="toolbar" id="toolbar" role="search" aria-label="Filtrar pedidos" hidden></div>
+
+    <div id="list"></div>
+  </div>
+
+</main>
+<script type="module" src="js/ui/orders-page.js"></script>
+</body>
+</html>

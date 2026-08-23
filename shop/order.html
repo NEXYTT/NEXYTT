@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es" data-theme="shop">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seguimiento del pedido · NEXYTT Store</title>
+<meta name="description" content="Confirmación y seguimiento de tu pedido en NEXYTT Store: estado en tiempo real, fecha estimada de entrega, número de seguimiento de cada paquete y detalle completo con el IVA desglosado.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+<main class="container container--wide" id="app" style="padding-block: var(--space-6) var(--space-8)">
+
+  <div id="crumbs"></div>
+
+  <!-- Everything below is painted by order-page.js: the page has two mutually
+       exclusive states (a found order, or the reference lookup) and re-renders
+       whole after each simulated status change. -->
+  <div id="order-root" class="stack" style="--stack-gap: var(--space-7)"></div>
+
+</main>
+<script type="module" src="js/ui/order-page.js"></script>
+</body>
+</html>

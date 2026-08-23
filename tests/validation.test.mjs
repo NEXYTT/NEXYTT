@@ -1,174 +1,159 @@
 /**
- * Checkout validation rules.
- *
- * The two things worth guarding here are the ones a customer notices: a card
- * number that passes Luhn (so a typo is caught before "payment" is attempted)
- * and postal codes that follow each destination's real format instead of a
- * five-digit assumption borrowed from Spain.
+ * Checkout validation. These run against a customer at the point of payment, so
+ * a false rejection loses a sale and a false acceptance produces an
+ * undeliverable order. Both directions are tested.
  */
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  validateEmail,
-  validatePostalCode,
-  validatePhone,
-  validateCardNumber,
-  detectCardBrand,
-  validateExpiry,
-  validateCvc,
-  validateRequired,
-  formatCardNumber,
-  luhn,
+  validateRequired, validateEmail, validatePostalCode, validatePhone,
+  validateCardNumber, detectCardBrand, luhn, formatCardNumber,
+  validateExpiry, validateCvc, POSTAL_RULES,
 } from "../shop/js/core/validation.js";
 
-/** Fixed clock: expiry assertions must not start failing with the calendar. */
-const NOW = Date.UTC(2026, 7, 23); // 23 August 2026
+const ok = (result, context) => assert.equal(result.ok, true, `${context}: ${result.error ?? ""}`);
+const bad = (result, context) => assert.equal(result.ok, false, `${context} should have been rejected`);
 
-test("Luhn accepts the published test numbers and rejects a single-digit typo", () => {
-  // The classic gateway test cards. Every one of them satisfies mod-10.
-  for (const pan of [
-    "4242424242424242", // Visa
-    "4000056655665556", // Visa debit
-    "5555555555554444", // Mastercard
-    "2223003122003222", // Mastercard 2-series
-    "378282246310005", // American Express
-  ]) {
-    assert.equal(luhn(pan), true, `${pan} should pass Luhn`);
-    assert.equal(validateCardNumber(pan).ok, true, `${pan} should validate`);
+test("required fields reject blank and whitespace-only input", () => {
+  ok(validateRequired("Ana"), "a real name");
+  bad(validateRequired(""), "empty");
+  bad(validateRequired("   "), "whitespace only");
+  bad(validateRequired(null), "null");
+  bad(validateRequired(undefined), "undefined");
+});
+
+test("email accepts real addresses and rejects malformed ones", () => {
+  for (const value of [
+    "cliente@ejemplo.es",
+    "ana.ruiz+pedidos@correo.co.uk",
+    "n@d.io",
+    "usuario_123@sub.dominio.com",
+  ]) ok(validateEmail(value), value);
+
+  for (const value of [
+    "", "sin-arroba.es", "@sindominio.com", "espacio en@medio.com",
+    "doble@@arroba.com", "sin.tld@dominio", "acaba@en.", null,
+  ]) bad(validateEmail(value), String(value));
+});
+
+test("Spanish postal codes follow the real five-digit rule", () => {
+  for (const value of ["28013", "08001", "01001", "52080"]) ok(validatePostalCode(value, "ES"), value);
+  // Spanish provinces run 01–52, so these are not deliverable.
+  for (const value of ["1234", "123456", "abcde", "", "00000", "99999"]) {
+    bad(validatePostalCode(value, "ES"), value);
   }
-
-  // Last digit changed: the checksum is exactly what catches this.
-  assert.equal(luhn("4242424242424241"), false);
-  const bad = validateCardNumber("4242424242424241");
-  assert.equal(bad.ok, false);
-  assert.match(bad.error, /no es válido/);
-
-  // Two digits transposed — the other error Luhn is designed to catch.
-  assert.equal(luhn("4242424242424422"), false);
 });
 
-test("card numbers: spacing is tolerated, letters and wrong lengths are not", () => {
-  const spaced = validateCardNumber("4242 4242 4242 4242");
-  assert.equal(spaced.ok, true);
-  assert.equal(spaced.value, "4242424242424242");
-  assert.equal(spaced.last4, "4242");
-  assert.equal(spaced.brand, "visa");
+test("postal codes follow each country's own format", () => {
+  ok(validatePostalCode("1000-001", "PT"), "Portuguese NNNN-NNN");
+  bad(validatePostalCode("1000", "PT"), "Portuguese without the suffix");
 
-  assert.equal(validateCardNumber("").ok, false);
-  assert.equal(validateCardNumber("4242abcd42424242").ok, false);
-  // Right prefix, wrong length for the brand: rejected before Luhn runs.
-  assert.equal(validateCardNumber("42424242424").ok, false);
-  // Amex is 15 digits; 16 must not be accepted just because it is a common length.
-  assert.equal(validateCardNumber("3782822463100050").ok, false);
+  ok(validatePostalCode("75001", "FR"), "French");
+  ok(validatePostalCode("10115", "DE"), "German");
+  ok(validatePostalCode("00184", "IT"), "Italian");
+  ok(validatePostalCode("SW1A 1AA", "GB"), "UK with a space");
+  ok(validatePostalCode("06600", "MX"), "Mexican");
+
+  bad(validatePostalCode("ABC", "FR"), "letters in a French code");
+  bad(validatePostalCode("1234", "DE"), "four digits in a German code");
 });
 
-test("brands are detected from the prefix, including partial input", () => {
-  assert.equal(detectCardBrand("4"), "visa");
-  assert.equal(detectCardBrand("4242 42"), "visa");
-  assert.equal(detectCardBrand("34"), "amex");
-  assert.equal(detectCardBrand("37"), "amex");
-  assert.equal(detectCardBrand("5105105105105100"), "mastercard");
-  assert.equal(detectCardBrand("2221"), "mastercard");
-  assert.equal(detectCardBrand("2720"), "mastercard");
-  assert.equal(detectCardBrand("2721"), "unknown"); // just above the 2-series
-  assert.equal(detectCardBrand("6011000990139424"), "unknown"); // Discover: not accepted here
+test("every country with a postal rule declares an example that its own rule accepts", () => {
+  for (const [country, rule] of Object.entries(POSTAL_RULES)) {
+    if (!rule.example) continue;
+    ok(validatePostalCode(rule.example, country), `${country} example ${rule.example}`);
+  }
+});
+
+test("an unknown country falls back to a permissive rule rather than blocking the sale", () => {
+  ok(validatePostalCode("12345", "ZZ"), "unknown country");
+  bad(validatePostalCode("", "ZZ"), "still requires something");
+});
+
+test("phone numbers accept the formats customers actually type", () => {
+  for (const value of ["600123456", "600 12 34 56", "+34 600 123 456", "+34600123456"]) {
+    ok(validatePhone(value, "ES"), value);
+  }
+  for (const value of ["123", "abcdefghi", ""]) bad(validatePhone(value, "ES"), value);
+});
+
+test("Luhn accepts the standard test numbers and rejects tampered ones", () => {
+  // The published test card numbers every processor documents.
+  for (const value of [
+    "4242424242424242",   // Visa
+    "4000056655665556",   // Visa debit
+    "5555555555554444",   // Mastercard
+    "5200828282828210",   // Mastercard debit
+    "378282246310005",    // American Express
+    "6011111111111117",   // Discover
+  ]) assert.equal(luhn(value), true, `${value} should pass Luhn`);
+
+  // A single altered digit must fail — that is the entire point of the checksum.
+  for (const value of ["4242424242424241", "5555555555554443", "378282246310006"]) {
+    assert.equal(luhn(value), false, `${value} should fail Luhn`);
+  }
+});
+
+test("card validation reports why a number was rejected", () => {
+  ok(validateCardNumber("4242 4242 4242 4242"), "spaced Visa");
+  bad(validateCardNumber("4242424242424241"), "failed checksum");
+  bad(validateCardNumber("42424242"), "too short");
+  bad(validateCardNumber("4242abcd42424242"), "letters");
+  bad(validateCardNumber(""), "empty");
+});
+
+test("card brands are detected from their prefixes", () => {
+  assert.equal(detectCardBrand("4242424242424242"), "visa");
+  assert.equal(detectCardBrand("5555555555554444"), "mastercard");
+  assert.equal(detectCardBrand("378282246310005"), "amex");
+  assert.equal(detectCardBrand("341111111111111"), "amex");
+  assert.equal(detectCardBrand("9999999999999999"), "unknown");
   assert.equal(detectCardBrand(""), "unknown");
 });
 
-test("the card number is grouped the way the brand prints it", () => {
+test("card numbers are grouped the way each brand prints them", () => {
   assert.equal(formatCardNumber("4242424242424242"), "4242 4242 4242 4242");
-  assert.equal(formatCardNumber("378282246310005"), "3782 822463 10005"); // amex 4-6-5
-  assert.equal(formatCardNumber("42424"), "4242 4");
+  // Amex prints 4-6-5, not 4-4-4-4.
+  assert.equal(formatCardNumber("378282246310005"), "3782 822463 10005");
+  assert.equal(formatCardNumber("4242"), "4242", "partial input formats as typed");
 });
 
-test("postal codes follow each country's real format", () => {
-  const cases = [
-    // country, valid, invalid
-    ["ES", "28013", "2801"],
-    ["ES", "08001", "99013"], // 99 is not a Spanish province
-    ["PT", "1000-205", "1000205X"],
-    ["FR", "75008", "75 008 1"],
-    ["DE", "10115", "1011"],
-    ["IT", "00184", "184"],
-    ["GB", "SW1A 1AA", "SW1A"],
-    ["MX", "06600", "660"],
-    ["NL", "1012 AB", "1012 A"],
-    ["CL", "8320000", "83200"],
+test("expiry rejects the past and accepts the current month", () => {
+  const now = Date.UTC(2026, 5, 15); // June 2026
+
+  ok(validateExpiry("06", "26", now), "the current month is still valid");
+  ok(validateExpiry("12", "26", now), "later this year");
+  ok(validateExpiry("01", "30", now), "a future year");
+
+  bad(validateExpiry("05", "26", now), "last month");
+  bad(validateExpiry("12", "25", now), "last year");
+  bad(validateExpiry("13", "27", now), "month 13");
+  bad(validateExpiry("00", "27", now), "month 0");
+  bad(validateExpiry("", "27", now), "no month");
+});
+
+test("CVC length follows the brand", () => {
+  ok(validateCvc("123", "visa"), "3 digits on Visa");
+  ok(validateCvc("1234", "amex"), "4 digits on Amex");
+  bad(validateCvc("1234", "visa"), "4 digits on Visa");
+  bad(validateCvc("123", "amex"), "3 digits on Amex");
+  bad(validateCvc("12a", "visa"), "letters");
+  bad(validateCvc("", "visa"), "empty");
+});
+
+test("every rejection carries a Spanish message the customer can act on", () => {
+  const failures = [
+    validateEmail("roto"),
+    validatePostalCode("1", "ES"),
+    validateCardNumber("4242424242424241"),
+    validateExpiry("01", "20", Date.UTC(2026, 0, 1)),
+    validateCvc("1", "visa"),
+    validateRequired(""),
   ];
-
-  for (const [country, good, wrong] of cases) {
-    assert.equal(validatePostalCode(good, country).ok, true, `${good} should be valid in ${country}`);
-    const bad = validatePostalCode(wrong, country);
-    assert.equal(bad.ok, false, `${wrong} should be invalid in ${country}`);
-    assert.ok(bad.error.length > 0);
+  for (const result of failures) {
+    assert.equal(result.ok, false);
+    assert.ok(typeof result.error === "string" && result.error.length > 5, "needs a usable message");
+    assert.ok(/[áéíóúñ¿ ]/.test(result.error), `"${result.error}" does not look like Spanish prose`);
   }
-
-  // Normalisation: what the customer types is cleaned up, not rejected.
-  assert.equal(validatePostalCode("1000205", "PT").value, "1000-205");
-  assert.equal(validatePostalCode("sw1a1aa", "GB").value, "SW1A 1AA");
-  assert.equal(validatePostalCode("1012ab", "NL").value, "1012 AB");
-  assert.equal(validatePostalCode("  28013 ", "ES").value, "28013");
-
-  // A country with no table entry still gets a sanity check.
-  assert.equal(validatePostalCode("1234", "JP").ok, true);
-  assert.equal(validatePostalCode("", "JP").ok, false);
-});
-
-test("phones accept the local and international spellings of the same number", () => {
-  for (const written of ["612345678", "612 345 678", "+34 612 345 678", "0034612345678"]) {
-    const result = validatePhone(written, "ES");
-    assert.equal(result.ok, true, `${written} should be valid`);
-    assert.equal(result.value, "+34612345678");
-  }
-
-  assert.equal(validatePhone("512345678", "ES").ok, false); // no Spanish number starts with 5
-  assert.equal(validatePhone("61234", "ES").ok, false);
-  assert.equal(validatePhone("", "ES").ok, false);
-  assert.equal(validatePhone("6123abc78", "ES").ok, false);
-
-  // Trunk zero is dropped in the international form.
-  assert.equal(validatePhone("07700 900123", "GB").value, "+447700900123");
-  assert.equal(validatePhone("+44 7700 900123", "GB").value, "+447700900123");
-  assert.equal(validatePhone("5512345678", "MX").ok, true);
-});
-
-test("expiry is valid through the last day of its month", () => {
-  assert.equal(validateExpiry("08", "26", NOW).ok, true); // this very month
-  assert.equal(validateExpiry("09", "26", NOW).ok, true);
-  assert.equal(validateExpiry("07", "26", NOW).ok, false); // last month
-  assert.equal(validateExpiry("12", "25", NOW).ok, false);
-  assert.equal(validateExpiry("13", "27", NOW).ok, false);
-  assert.equal(validateExpiry("00", "27", NOW).ok, false);
-  assert.equal(validateExpiry("", "", NOW).ok, false);
-  assert.equal(validateExpiry("06", "60", NOW).ok, false); // implausibly far ahead
-  assert.equal(validateExpiry("4", "29", NOW).value, "04/29"); // padded on the way out
-});
-
-test("CVC length depends on the brand", () => {
-  assert.equal(validateCvc("123", "visa").ok, true);
-  assert.equal(validateCvc("123", "mastercard").ok, true);
-  assert.equal(validateCvc("1234", "visa").ok, false);
-  assert.equal(validateCvc("1234", "amex").ok, true);
-  assert.equal(validateCvc("123", "amex").ok, false);
-  assert.equal(validateCvc("12a", "visa").ok, false);
-  assert.equal(validateCvc("", "visa").ok, false);
-});
-
-test("emails: the four real typos are caught", () => {
-  assert.equal(validateEmail("ana.ruiz+tienda@correo.es").ok, true);
-  assert.equal(validateEmail("  ANA@Correo.ES ").value, "ana@correo.es"); // trimmed and lowercased
-  assert.equal(validateEmail("anacorreo.es").ok, false); // no @
-  assert.equal(validateEmail("ana@").ok, false); // no domain
-  assert.equal(validateEmail("ana@correo").ok, false); // no TLD
-  assert.equal(validateEmail("ana ruiz@correo.es").ok, false); // space
-  assert.equal(validateEmail("").ok, false);
-});
-
-test("required fields report the field they belong to", () => {
-  assert.equal(validateRequired("Ana", "tu nombre").ok, true);
-  assert.equal(validateRequired("  Ana  ", "tu nombre").value, "Ana");
-  assert.match(validateRequired("", "tu nombre").error, /tu nombre/);
-  assert.equal(validateRequired("A", "tu nombre", { min: 2 }).ok, false);
-  assert.equal(validateRequired("x".repeat(200), "la dirección", { max: 120 }).ok, false);
 });

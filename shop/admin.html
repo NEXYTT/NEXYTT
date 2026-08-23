@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es" data-theme="shop">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de operación · NEXYTT Store</title>
+<meta name="description" content="Back office de la tienda: economía unitaria producto a producto, veredicto de escalar o retirar, scorecard de riesgo por proveedor, margen real de cada pedido y un simulador de cuenta de resultados mensual con punto de equilibrio y ROAS necesario.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+<main class="container container--wide" id="app" style="padding-block: var(--space-6) var(--space-8)">
+
+  <div id="crumbs"></div>
+
+  <header class="row row--between row--wrap" style="gap: var(--space-4); margin-bottom: var(--space-6)">
+    <div style="min-width: 0">
+      <p class="eyebrow">Back office</p>
+      <h1>Panel de operación</h1>
+      <p class="muted text-sm" style="max-width: 68ch">
+        La misma tienda vista desde dentro: lo que cuesta cada referencia, lo que deja
+        después de pagar al proveedor, a la pasarela y al anuncio que trajo el pedido, y
+        qué haría falta para que el mes cierre en positivo.
+      </p>
+    </div>
+    <div id="headline"></div>
+  </header>
+
+  <!-- The tab strip and the panel are built by admin-page.js. Controls that
+       hold typed input (CAC, margen objetivo, simulador) are created once and
+       reused across repaints, so typing never loses focus. -->
+  <div class="tabs" id="tabs" role="tablist" aria-label="Secciones del panel"></div>
+
+  <div id="panel"></div>
+
+</main>
+<script type="module" src="js/ui/admin-page.js"></script>
+</body>
+</html>

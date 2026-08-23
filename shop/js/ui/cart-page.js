@@ -641,9 +641,15 @@ function render() {
   // Rendered even when empty: it is what leaves the checkout button disabled.
   renderSummary();
 
-  if (empty) return;
-
   lineNodes.clear();
+  if (empty) {
+    // Drop the hidden rows too: stale controls pointing at line keys that no
+    // longer exist are a bug waiting for someone to reach them.
+    replace(linesHost, []);
+    replace(crossGrid, []);
+    return;
+  }
+
   replace(linesHost, cart.lines.map(cartLine));
   syncLines();
   replace(crossGrid, crossSellProducts().map((p) => productCard(p, { onAdd: addToCart })));

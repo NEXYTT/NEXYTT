@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es" data-theme="shop">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finalizar compra · NEXYTT Store</title>
+<meta name="description" content="Finaliza tu compra en NEXYTT Store en tres pasos: datos de envío, pago y confirmación, con el resumen del pedido y el total con IVA siempre a la vista. Pago simulado.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/shop.css">
+</head>
+<body>
+<main class="container container--wide" id="app" style="padding-block: var(--space-6) var(--space-8)">
+
+  <div id="crumbs"></div>
+
+  <header style="margin-bottom: var(--space-5)">
+    <h1>Finalizar compra</h1>
+    <p class="muted text-sm" style="margin-top: var(--space-2)">
+      Tres pasos: datos de envío, pago y confirmación. Puedes volver atrás en cualquier momento sin perder lo que hayas escrito.
+    </p>
+  </header>
+
+  <!-- Two states, one page: the flow when there is something to buy, the empty
+       view when there is not. Only one is ever visible. -->
+  <div id="checkout-view" hidden>
+    <nav class="steps" id="steps" aria-label="Pasos de la compra"></nav>
+
+    <div class="cart-layout">
+      <!-- min-width:0 on both columns: once the layout collapses to a single
+           `1fr` track, a grid item's automatic minimum is its content, so any
+           unbreakable row inside would widen the track past the viewport. -->
+      <section id="step-host" style="min-width: 0"></section>
+
+      <aside class="summary" id="summary-host" aria-labelledby="summary-title" style="min-width: 0"></aside>
+    </div>
+  </div>
+
+  <div id="empty-view" hidden>
+    <div class="card">
+      <div class="empty">
+        <div class="empty__icon" id="empty-icon" aria-hidden="true"></div>
+        <h2 style="color: var(--fg); font-size: var(--text-xl)">No hay nada que pagar todavía</h2>
+        <p class="text-sm" style="margin-top: var(--space-2)">
+          Tu carrito está vacío, así que no hay pedido que confirmar. Elige algo del catálogo
+          y vuelve por aquí: los datos de envío que hayas guardado siguen esperándote.
+        </p>
+        <a class="btn btn--primary" href="index.html" style="margin-top: var(--space-5)">Ver el catálogo</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+<script type="module" src="js/ui/checkout-page.js"></script>
+</body>
+</html>
