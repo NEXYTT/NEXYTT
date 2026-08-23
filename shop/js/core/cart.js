@@ -182,6 +182,18 @@ export class Cart extends Emitter {
     const zone = zoneForCountry(this.country);
     const promo = this.promoCode ? PROMOS[this.promoCode] : null;
 
+    // An empty cart ships nothing, so it costs nothing. Without this guard the
+    // shipping table would quote the base rate against a zero subtotal and the
+    // empty-cart page would display a total of 3,99 €.
+    if (this.lines.length === 0) {
+      return {
+        subtotal: 0, discount: 0, discounted: 0,
+        shipping: 0, shippingFree: true, missingForFree: zone.freeOver,
+        tax: 0, net: 0, total: 0, savings: 0,
+        zone, promo: null, count: 0, grams: 0,
+      };
+    }
+
     let discount = 0;
     let freeShipping = false;
 

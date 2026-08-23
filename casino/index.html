@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es" data-theme="casino">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lobby · NEXYTT Casino</title>
+<meta name="description" content="Lobby del casino NEXYTT: seis juegos con créditos virtuales sin valor monetario, RTP publicado y resultados verificables con HMAC-SHA256.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/casino.css">
+<link rel="stylesheet" href="css/lobby.css">
+</head>
+<body>
+<main class="page" id="app">
+
+  <header class="page__head lobby-hero">
+    <p class="eyebrow">Créditos virtuales · sin valor monetario</p>
+    <h1 class="page__title">Bienvenido al casino NEXYTT</h1>
+    <p class="page__lede">
+      Seis juegos, un único libro mayor y un resultado que puedes recalcular tú mismo.
+      Aquí se juega con créditos virtuales: <strong>no valen dinero</strong>, no se deposita
+      ni se retira nada y no hay premios reales.
+    </p>
+    <div class="row row--wrap lobby-hero__marks">
+      <span class="badge badge--accent">6 juegos</span>
+      <span class="badge">RTP publicado</span>
+      <span class="badge">HMAC-SHA256 verificable</span>
+      <span class="badge">Límites de juego responsable</span>
+    </div>
+  </header>
+
+  <div class="lobby-layout">
+    <div class="lobby-main">
+
+      <section aria-labelledby="games-title">
+        <div class="section-head">
+          <h2 id="games-title">Elige juego</h2>
+          <p class="muted text-sm">Cada ficha indica su RTP teórico y su volatilidad.</p>
+        </div>
+        <div class="game-grid" id="game-grid"></div>
+      </section>
+
+      <section class="card card--pad fair-block" aria-labelledby="fair-title">
+        <h2 id="fair-title">Cómo funciona la justicia verificable</h2>
+        <p class="muted text-sm">
+          Antes de que juegues, la casa fija una semilla secreta y publica solo su hash.
+          Ese hash es un compromiso: no puede cambiar la semilla después sin que el hash deje de cuadrar.
+        </p>
+        <ol class="steps steps--compact">
+          <li><strong>Compromiso.</strong> Publicamos <code class="mono">SHA-256(semilla del servidor)</code> antes de la primera apuesta.</li>
+          <li><strong>Tu semilla.</strong> Añades una semilla de cliente que controlas tú y puedes cambiar cuando quieras.</li>
+          <li><strong>Cada ronda.</strong> Los números salen de <code class="mono">HMAC-SHA256(servidor, cliente:nonce:cursor)</code>, nunca de <code class="mono">Math.random()</code>.</li>
+          <li><strong>Revelación.</strong> Al rotar la semilla se hace pública y puedes recalcular todas tus rondas.</li>
+        </ol>
+        <div class="field">
+          <span class="label">Compromiso en vigor</span>
+          <div class="seed-value" id="lobby-commitment">Cargando…</div>
+        </div>
+        <a class="btn btn--primary" href="fairness.html">Abrir el verificador</a>
+      </section>
+
+    </div>
+
+    <aside class="lobby-side" aria-label="Tu sesión">
+      <div id="side-stats"></div>
+
+      <section class="card card--pad ledger" aria-labelledby="ledger-title">
+        <div class="section-head">
+          <h2 id="ledger-title" class="ledger__title">Libro mayor</h2>
+          <p class="muted text-xs">Últimos 10 movimientos, en créditos.</p>
+        </div>
+        <div class="table-wrap" id="ledger-host"></div>
+      </section>
+    </aside>
+  </div>
+
+</main>
+<script type="module" src="js/ui/lobby.js"></script>
+</body>
+</html>

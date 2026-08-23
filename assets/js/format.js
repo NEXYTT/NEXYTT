@@ -43,7 +43,11 @@ export function credits(minorUnits, { locale = DEFAULT_LOCALE } = {}) {
   }).format(minorUnits / 100);
 }
 
-/** Compact form for big numbers: 12.4K, 3.1M. */
+/**
+ * Compact form for big numbers. Note that Spanish spells the thousands unit out
+ * ("12,4 mil"), so this only saves horizontal space from millions upward — use
+ * it for readability at scale, not to squeeze a four-digit number into a chip.
+ */
 export function compact(value, { locale = DEFAULT_LOCALE } = {}) {
   return numberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }

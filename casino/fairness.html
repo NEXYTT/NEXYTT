@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es" data-theme="casino">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Justicia verificable · NEXYTT Casino</title>
+<meta name="description" content="Verifica cualquier ronda del casino NEXYTT: recalcula el SHA-256 del compromiso y el flujo de números HMAC-SHA256 a partir de la semilla del servidor, tu semilla y el nonce.">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="css/casino.css">
+<link rel="stylesheet" href="css/lobby.css">
+</head>
+<body>
+<main class="page" id="app">
+
+  <header class="page__head">
+    <p class="eyebrow">Commit · reveal</p>
+    <h1 class="page__title">Justicia verificable</h1>
+    <p class="page__lede">
+      Ningún resultado de este casino sale de <code class="mono">Math.random()</code>.
+      Cada ronda se deriva de tres datos —la semilla del servidor, tu semilla y el número
+      de ronda— y en esta página puedes rehacer el cálculo tú mismo, paso a paso.
+    </p>
+  </header>
+
+  <section aria-labelledby="steps-title">
+    <div class="section-head">
+      <h2 id="steps-title">El esquema en cuatro pasos</h2>
+    </div>
+    <ol class="steps">
+      <li>
+        <h3>1 · La casa se compromete</h3>
+        <p class="muted text-sm">
+          Antes de que apuestes, se genera una semilla secreta de 32 bytes y se publica
+          únicamente su huella <code class="mono">SHA-256</code>. Esa huella es el compromiso.
+          Cambiar la semilla después es imposible sin que la huella deje de coincidir.
+        </p>
+      </li>
+      <li>
+        <h3>2 · Tú aportas la tuya</h3>
+        <p class="muted text-sm">
+          Tu semilla de cliente entra en cada cálculo y la eliges tú. Como la casa ya se
+          comprometió a la suya, no puede buscar una combinación que te perjudique.
+        </p>
+      </li>
+      <li>
+        <h3>3 · Cada ronda consume un nonce</h3>
+        <p class="muted text-sm">
+          La ronda número <em>n</em> produce sus números con
+          <code class="mono">HMAC-SHA256(semilla_servidor, «cliente:nonce:cursor»)</code>.
+          Cada bloque de 32 bytes da 8 números entre 0 y 1; el cursor avanza si hacen falta más.
+        </p>
+      </li>
+      <li>
+        <h3>4 · Se revela y se comprueba</h3>
+        <p class="muted text-sm">
+          Al rotar la semilla, la anterior se hace pública. Con ella recalculas su
+          <code class="mono">SHA-256</code> (tiene que dar el compromiso que se publicó) y
+          reproduces los números exactos de cada ronda que jugaste.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <div class="fair-layout">
+
+    <section class="card card--pad" aria-labelledby="verify-title">
+      <div class="section-head">
+        <h2 id="verify-title">Verificador de rondas</h2>
+        <p class="muted text-sm">
+          Introduce una semilla del servidor ya revelada y el nonce de la ronda que quieras comprobar.
+        </p>
+      </div>
+
+      <form id="verify-form" class="verify-form" novalidate>
+        <div class="field">
+          <label class="label" for="fv-server">Semilla del servidor (revelada)</label>
+          <input class="input mono" id="fv-server" name="server" type="text" autocomplete="off"
+                 spellcheck="false" placeholder="64 caracteres hexadecimales">
+          <span class="field__hint">Se obtiene al rotar la semilla, aquí abajo o en el diálogo de la barra superior.</span>
+        </div>
+
+        <div class="field">
+          <label class="label" for="fv-client">Semilla del cliente</label>
+          <input class="input mono" id="fv-client" name="client" type="text" autocomplete="off"
+                 spellcheck="false" placeholder="tu semilla">
+        </div>
+
+        <div class="verify-form__pair">
+          <div class="field">
+            <label class="label" for="fv-nonce">Nonce (ronda)</label>
+            <input class="input mono" id="fv-nonce" name="nonce" type="number" min="0" step="1" value="0" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label class="label" for="fv-count">Cantidad de números</label>
+            <input class="input mono" id="fv-count" name="count" type="number" min="1" max="64" step="1" value="8" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="fv-commitment">Compromiso publicado (opcional)</label>
+          <input class="input mono" id="fv-commitment" name="commitment" type="text" autocomplete="off"
+                 spellcheck="false" placeholder="pega aquí el hash que anotaste">
+          <span class="field__hint">Si lo pegas, comparamos el SHA-256 calculado con él.</span>
+        </div>
+
+        <div class="row row--wrap">
+          <button class="btn btn--primary" type="submit">Verificar</button>
+          <button class="btn btn--ghost" type="button" id="fv-fill">Usar los datos de la sesión</button>
+        </div>
+      </form>
+
+      <div id="verify-output" class="verify-output" role="status" aria-live="polite"></div>
+    </section>
+
+    <aside class="fair-side" aria-labelledby="state-title">
+      <section class="card card--pad">
+        <div class="section-head">
+          <h2 id="state-title" class="ledger__title">Estado de tu sesión</h2>
+          <p class="muted text-xs">Lo que está en vigor ahora mismo en este navegador.</p>
+        </div>
+
+        <div class="field">
+          <span class="label">Compromiso activo</span>
+          <div class="seed-row">
+            <div class="seed-value" id="fs-commitment">—</div>
+            <button class="btn btn--ghost btn--sm" type="button" data-copy="fs-commitment"
+                    title="Copiar el compromiso activo">Copiar</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Compromiso siguiente</span>
+          <div class="seed-value" id="fs-next">—</div>
+          <span class="field__hint">La semilla que entrará en juego cuando rotes. Su hash ya está fijado.</span>
+        </div>
+        <div class="field">
+          <span class="label">Tu semilla de cliente</span>
+          <div class="seed-row">
+            <div class="seed-value" id="fs-client">—</div>
+            <button class="btn btn--ghost btn--sm" type="button" data-copy="fs-client"
+                    title="Copiar tu semilla de cliente">Copiar</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label">Nonce actual</span>
+          <div class="seed-value" id="fs-nonce">—</div>
+          <span class="field__hint">Rondas jugadas con la semilla en vigor. La primera fue el nonce 0.</span>
+        </div>
+
+        <button class="btn btn--primary btn--block" type="button" id="fs-rotate">
+          Rotar y revelar la semilla
+        </button>
+        <p class="text-xs subtle">
+          Al rotar, la semilla actual deja de usarse, se hace pública y el formulario se rellena
+          con ella para que compruebes tus rondas anteriores.
+        </p>
+      </section>
+    </aside>
+
+  </div>
+
+  <section aria-labelledby="mapping-title">
+    <div class="section-head">
+      <h2 id="mapping-title">Del número al resultado</h2>
+      <p class="muted text-sm">
+        Todos los juegos leen del mismo flujo de números y en el mismo orden. Esto es lo que
+        hace cada uno con ellos.
+      </p>
+    </div>
+    <div class="table-wrap" id="mapping-host"></div>
+  </section>
+
+</main>
+<script type="module" src="js/ui/fairness-page.js"></script>
+</body>
+</html>

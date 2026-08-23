@@ -117,7 +117,7 @@ const RANK_ORDER = { A: 14, K: 13, Q: 12, J: 11, 10: 10, 9: 9, 8: 8, 7: 7, 6: 6,
 /**
  * Classify a 5-card poker hand.
  * @param {{rank:string,suit:string}[]} cards exactly 5
- * @returns {{category: typeof POKER_HANDS[number], rank: number, label: string, kickers: number[]}}
+ * @returns {{category: typeof POKER_HANDS[number], rank: number, label: string, kickers: number[], straightHigh: number|null, strength: number}}
  */
 export function evaluatePoker(cards) {
   if (cards.length !== 5) throw new RangeError(`evaluatePoker needs exactly 5 cards, got ${cards.length}`);
@@ -140,13 +140,29 @@ export function evaluatePoker(cards) {
     else if (distinct[0] === 14 && distinct[1] === 5 && distinct[4] === 2) straightHigh = 5;
   }
 
-  const kickers = groups.map(([v]) => v);
-  const make = (category, label) => ({
-    category,
-    rank: POKER_HANDS.indexOf(category),
-    label,
-    kickers,
-  });
+  // Kickers in comparison order. For the wheel the ace plays LOW, so the
+  // straight is 5-high and the ace must not sit at the front of the kickers —
+  // otherwise A-2-3-4-5 would compare as stronger than 6-5-4-3-2.
+  const kickers = straightHigh === 5 ? [5, 4, 3, 2, 1] : groups.map(([v]) => v);
+
+  const make = (category, label) => {
+    const rank = POKER_HANDS.indexOf(category);
+    return {
+      category,
+      rank,
+      label,
+      kickers,
+      straightHigh: straightHigh || null,
+      // Total ordering across every hand: the category, then the kickers, packed
+      // as base-15 digits. The kicker list is padded to a fixed width first —
+      // categories yield different numbers of groups (quads give 2, high card
+      // gives 5), and without padding the category would carry a different
+      // weight per category and a pair could score below a high card.
+      strength: [...kickers, 0, 0, 0, 0, 0]
+        .slice(0, 5)
+        .reduce((acc, k) => acc * 15 + k, rank),
+    };
+  };
 
   if (flush && straightHigh === 14) return make("royal_flush", "Escalera real");
   if (flush && straightHigh) return make("straight_flush", "Escalera de color");

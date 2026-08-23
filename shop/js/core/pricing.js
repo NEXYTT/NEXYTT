@@ -195,8 +195,14 @@ export function unitEconomics({
  * Suggested retail price for a target contribution margin, solved for `price`.
  * Iterates because the payment fee and the VAT extraction both depend on price.
  *
- * @param {{supplierCost:number, supplierShipping?:number, targetMarginRate?:number, taxRate?:number, adCostPerOrder?:number}} input
- * @returns {number} price in minor units, rounded to a charm-price ending
+ * With `charm` on (the default) the result is rounded **up** to the next .99,
+ * so the achieved margin is always at or above the target, never below it. On a
+ * cheap item that rounding can overshoot the target by a few points — that is
+ * the price of a .99 ending, and overshooting is the safe direction. Pass
+ * `charm: false` for the exact solved price.
+ *
+ * @param {{supplierCost:number, supplierShipping?:number, targetMarginRate?:number, taxRate?:number, adCostPerOrder?:number, charm?:boolean}} input
+ * @returns {number} price in minor units
  */
 export function suggestPrice({
   supplierCost,
@@ -204,6 +210,7 @@ export function suggestPrice({
   targetMarginRate = 0.45,
   taxRate = 0.21,
   adCostPerOrder = 0,
+  charm = true,
 }) {
   let price = (supplierCost + supplierShipping + adCostPerOrder) * 3;
 
@@ -221,7 +228,8 @@ export function suggestPrice({
     price *= 1 + gap;
   }
 
-  return charmPrice(Math.round(price));
+  const solved = Math.round(price);
+  return charm ? charmPrice(solved) : solved;
 }
 
 /** Round up to the nearest .99 — standard retail psychology. */

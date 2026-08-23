@@ -1,0 +1,214 @@
+/* ==========================================================================
+   Lobby + fairness verifier.
+   Requires tokens.css, base.css and casino.css — the game grid, tiles and
+   seed rows already live there, so this file only adds page layout.
+   ========================================================================== */
+
+/* Vertical rhythm between the top-level blocks of both pages. */
+.page > * + * { margin-top: var(--space-7); }
+
+.section-head { margin-bottom: var(--space-4); }
+.section-head h2 { font-size: var(--text-xl); }
+.section-head p { margin-top: var(--space-1); }
+
+/* --- Lobby ---------------------------------------------------------------- */
+.lobby-hero__marks { margin-top: var(--space-4); }
+
+.lobby-layout {
+  display: grid;
+  /* minmax(0, 1fr) instead of 1fr: a wide table must not blow out the column. */
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-5);
+  align-items: start;
+}
+/* Explicit minmax(0, 1fr) tracks, not implicit ones: an implicit track is
+   sized to its items' min-content, and a wide table inside a card would make
+   the whole column wider than the viewport instead of scrolling inside its
+   own .table-wrap. */
+.lobby-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  align-content: start;
+}
+.lobby-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-content: start;
+  position: sticky;
+  top: calc(var(--header-h) + var(--space-4));
+}
+
+@media (max-width: 1024px) {
+  .lobby-layout { grid-template-columns: 1fr; }
+  .lobby-side { position: static; }
+}
+
+.fair-block > * + * { margin-top: var(--space-4); }
+.fair-block code { font-size: 0.9em; overflow-wrap: anywhere; }
+
+.ledger__title { font-size: var(--text-lg); }
+.ledger .table td:first-child { min-width: 108px; }
+.ledger .empty { padding: var(--space-6) var(--space-2); }
+.ledger .empty__icon { display: flex; justify-content: center; }
+
+/* --- Steps ---------------------------------------------------------------- */
+.steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+.steps > li {
+  background: var(--bg-elev-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.steps h3 {
+  font-size: var(--text-md);
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+.steps code { overflow-wrap: anywhere; }
+
+/* Inline variant for the lobby teaser: numbered, no card around each step. */
+.steps--compact {
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  counter-reset: step;
+}
+.steps--compact > li {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: 0 0 0 var(--space-7);
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+}
+.steps--compact > li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+
+/* --- Fairness page -------------------------------------------------------- */
+.fair-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--space-5);
+  align-items: start;
+}
+.fair-side { min-width: 0; }
+.fair-side .field + .field,
+.fair-side .btn--block { margin-top: var(--space-4); }
+.fair-side .text-xs { margin-top: var(--space-2); }
+
+@media (max-width: 1024px) {
+  .fair-layout { grid-template-columns: 1fr; }
+}
+
+.verify-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.verify-form__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.verify-form .input { overflow-wrap: anywhere; }
+
+.verify-output { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.verify-output:not(:empty) {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.verify-flag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+.verify-flag svg { flex: none; }
+.verify-flag--ok {
+  background: var(--win-soft);
+  color: var(--win);
+  border-color: color-mix(in srgb, var(--win) 45%, transparent);
+}
+.verify-flag--bad {
+  background: var(--loss-soft);
+  color: var(--loss);
+  border-color: color-mix(in srgb, var(--loss) 45%, transparent);
+}
+.verify-flag--info {
+  background: var(--info-soft);
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 35%, transparent);
+}
+
+/* One card per generated number: index, value, and the value as a bar. */
+.number-grid {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-2);
+}
+.number-grid__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.number-grid__index {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+.number-grid__value { font-size: var(--text-sm); text-align: right; }
+.number-grid__bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elev-3);
+  overflow: hidden;
+}
+.number-grid__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+/* --- Narrow screens ------------------------------------------------------- */
+/* The shell bar is laid out for desktop. On a phone the strapline and the
+   "Saldo" caption are the two things that push it past the viewport, and
+   neither carries information the pill itself does not already show. */
+@media (max-width: 560px) {
+  .topbar__inner { gap: var(--space-2); padding-inline: var(--space-3); }
+  .brand__sub { display: none; }
+  .balance { padding-left: var(--space-3); gap: var(--space-2); }
+  .balance__label { display: none; }
+  .verify-form__pair { grid-template-columns: 1fr; }
+}
