@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es" data-theme="casino">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXYTT · Casino de créditos virtuales y tienda de dropshipping</title>
+<meta name="description" content="Dos proyectos web completos en HTML, CSS y módulos ES nativos, sin dependencias ni build: un casino play-money con justicia verificable y una tienda de dropshipping con cálculo de margen real.">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/landing.css">
+</head>
+<body>
+
+<header class="landing-nav">
+  <div class="landing-nav__inner container container--wide">
+    <a class="brand-mark" href="index.html" aria-label="NEXYTT, inicio">
+      <span class="brand-mark__badge" aria-hidden="true">N</span>
+      <span>NEXYTT</span>
+    </a>
+    <nav class="landing-nav__links" aria-label="Secciones del proyecto">
+      <a href="casino/index.html">Casino</a>
+      <a href="shop/index.html">Tienda</a>
+      <a href="#construido">Cómo está construido</a>
+      <a href="docs/ARQUITECTURA.md">Arquitectura</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero container container--wide" aria-labelledby="hero-title">
+    <p class="eyebrow">Dos proyectos · un mismo cimiento</p>
+    <h1 class="hero__title" id="hero-title">NEXYTT</h1>
+    <p class="hero__lede">
+      Dos aplicaciones web completas escritas en HTML, CSS y módulos ES nativos:
+      <strong>cero dependencias, cero build</strong>. Se abren desde cualquier servidor
+      estático y funcionan igual. Un casino de créditos virtuales en el que cada resultado
+      se puede recalcular, y una tienda de dropshipping que calcula el margen de verdad.
+    </p>
+    <div class="hero__actions">
+      <a class="btn btn--primary btn--lg" href="casino/index.html">Entrar al casino</a>
+      <a class="btn btn--ghost btn--lg" href="shop/index.html">Ver la tienda</a>
+    </div>
+    <dl class="hero__facts">
+      <div><dt>Dependencias</dt><dd>0</dd></div>
+      <div><dt>Pasos de build</dt><dd>0</dd></div>
+      <div><dt>Juegos</dt><dd>6</dd></div>
+      <div><dt>Productos</dt><dd>26</dd></div>
+    </dl>
+  </section>
+
+  <section class="container container--wide" aria-labelledby="projects-title">
+    <h2 class="section-title" id="projects-title">Los dos proyectos</h2>
+    <div class="project-grid">
+
+      <article class="project-card project-card--casino">
+        <p class="eyebrow">Play-money · créditos sin valor</p>
+        <h3>NEXYTT Casino</h3>
+        <p class="muted">
+          Seis juegos completos con una sola cartera, un libro mayor auditable y un
+          generador de números sembrado. Ninguna partida usa <code class="mono">Math.random()</code>:
+          todo sale de un flujo HMAC-SHA256 que el jugador puede reproducir.
+        </p>
+
+        <ul class="feature-list">
+          <li><strong>Justicia verificable HMAC-SHA256.</strong> Compromiso <code class="mono">SHA-256</code> publicado antes de jugar, semilla de cliente editable y revelación al rotar.</li>
+          <li><strong>Seis juegos.</strong> Tragaperras, blackjack, ruleta europea, dados, crash y minas, cada uno con su RTP declarado.</li>
+          <li><strong>Libro mayor entero.</strong> Cada apuesta y cada pago quedan anotados en unidades menores; el RTP que se muestra se mide sobre el libro, no se afirma.</li>
+          <li><strong>Límites de juego responsable.</strong> Apuesta máxima, tope de pérdidas, reloj de sesión y autoexclusión, comprobados antes de aceptar la apuesta.</li>
+          <li><strong>Verificador público.</strong> Una página donde pegar semilla, nonce y compromiso y rehacer el cálculo entero.</li>
+        </ul>
+
+        <p class="tech-row">
+          <span class="chip-static">HMAC-SHA256 en JS puro</span>
+          <span class="chip-static">Módulos ES</span>
+          <span class="chip-static">&lt;dialog&gt;</span>
+          <span class="chip-static">Intl.NumberFormat</span>
+        </p>
+
+        <div class="project-card__actions">
+          <a class="btn btn--primary" href="casino/index.html">Entrar al casino</a>
+          <a class="btn btn--ghost" href="casino/fairness.html">Ver el verificador</a>
+        </div>
+      </article>
+
+      <article class="project-card project-card--shop">
+        <p class="eyebrow">Escaparate · pago simulado</p>
+        <h3>NEXYTT Shop</h3>
+        <p class="muted">
+          Una tienda de dropshipping con la parte que casi nunca se enseña: qué cuesta
+          cada producto, qué margen deja después de IVA y envío, y a qué proveedor
+          se le encarga cada línea del pedido.
+        </p>
+
+        <ul class="feature-list">
+          <li><strong>26 productos reales del catálogo.</strong> Con categorías, facetas de búsqueda y productos relacionados.</li>
+          <li><strong>Cálculo de margen real.</strong> Coste, IVA, envío por zona y comisión entran en una economía unitaria que se ve en el panel.</li>
+          <li><strong>Enrutado por proveedor.</strong> Cada pedido se reparte entre proveedores según plazo de entrega y tasa de defectos.</li>
+          <li><strong>Checkout en tres pasos.</strong> Datos, envío y confirmación, con el desglose cuadrando siempre: neto + impuestos = total.</li>
+          <li><strong>Seguimiento de pedidos.</strong> Estados que avanzan y un panel de administración con los números del negocio.</li>
+        </ul>
+
+        <p class="tech-row">
+          <span class="chip-static">Aritmética en céntimos</span>
+          <span class="chip-static">Módulos ES</span>
+          <span class="chip-static">CSS Grid</span>
+          <span class="chip-static">SVG generado</span>
+        </p>
+
+        <div class="project-card__actions">
+          <a class="btn btn--primary" href="shop/index.html">Ver la tienda</a>
+          <a class="btn btn--ghost" href="shop/admin.html">Panel de márgenes</a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="container container--wide" id="construido" aria-labelledby="built-title">
+    <h2 class="section-title" id="built-title">Cómo está construido</h2>
+    <div class="build-layout">
+
+      <div class="build-tree card card--pad">
+        <p class="eyebrow">Estructura</p>
+        <div class="scroll-x">
+<pre class="tree mono">NEXYTT/
+├─ assets/            código compartido por los dos proyectos
+│  ├─ css/            tokens.css (única fuente de color) + base.css
+│  └─ js/             dom, format, storage, emitter, icons
+├─ casino/
+│  ├─ css/            shell, mesa, cartas, fichas
+│  ├─ js/core/        sha256, rng, wallet, responsible, cards, context
+│  ├─ js/games/       lógica pura de cada juego, sin DOM
+│  └─ js/ui/          controladores de pantalla
+├─ shop/
+│  ├─ data/           catálogo de 26 productos y proveedores
+│  ├─ js/core/        pricing, cart, catalog, orders
+│  └─ js/ui/          escaparate, ficha, carrito, checkout
+├─ docs/ARQUITECTURA.md   el contrato entre módulos
+└─ tests/             smoke test de navegador + lógica pura</pre>
+        </div>
+        <p class="muted text-sm">
+          La misma regla en los dos proyectos: la lógica vive en <code class="mono">js/core/</code>
+          y no toca el DOM, así que se ejecuta igual en el navegador y bajo <code class="mono">node --test</code>.
+        </p>
+      </div>
+
+      <ul class="principles">
+        <li>
+          <h3>Cero dependencias</h3>
+          <p class="muted text-sm">
+            Ni <code class="mono">npm install</code> ni transpilación. Todo son módulos ES nativos,
+            así que cualquier página se sirve tal cual y sigue funcionando dentro de diez años.
+          </p>
+        </li>
+        <li>
+          <h3>El dinero es entero</h3>
+          <p class="muted text-sm">
+            Saldos, precios e importes viajan en unidades menores (céntimos). Un <code class="mono">float</code>
+            nunca sostiene un saldo: el redondeo ocurre una sola vez, al mostrarlo.
+          </p>
+        </li>
+        <li>
+          <h3>La lógica es pura</h3>
+          <p class="muted text-sm">
+            Los módulos de dominio reciben el almacenamiento inyectado y devuelven datos.
+            Sin DOM dentro, se pueden probar de verdad y no solo hacer clic encima.
+          </p>
+        </li>
+        <li>
+          <h3>RNG sembrado</h3>
+          <p class="muted text-sm">
+            Cada ronda del casino nace de una semilla y un nonce. Es reproducible, es
+            auditable y por eso se puede publicar el compromiso antes de jugar.
+          </p>
+        </li>
+      </ul>
+
+    </div>
+  </section>
+
+  <section class="container container--wide" aria-labelledby="legal-title">
+    <h2 class="section-title" id="legal-title">Aviso honesto</h2>
+    <div class="notice-grid">
+      <div class="notice">
+        <h3>El casino no es un casino</h3>
+        <p>
+          Se juega con créditos virtuales <strong>sin valor monetario</strong>. No hay depósitos,
+          ni retiradas, ni premios: el saldo vive en el navegador y se recarga con un botón.
+        </p>
+        <p>
+          Un casino con dinero real es otra cosa por completo. En España necesita licencia de la
+          DGOJ, verificación de identidad y edad de cada jugador, inscripción en el registro de
+          interdicciones, prevención de blanqueo de capitales, un RNG certificado por un
+          laboratorio externo y los datos alojados bajo supervisión del regulador. Nada de eso
+          se resuelve con código de escaparate, y este proyecto no lo pretende.
+        </p>
+        <p class="text-sm subtle">
+          Si el juego deja de ser un entretenimiento para ti, en España puedes llamar al
+          900 200 225, la línea gratuita y confidencial de FEJAR.
+        </p>
+      </div>
+      <div class="notice">
+        <h3>La tienda no cobra</h3>
+        <p>
+          El checkout es una <strong>simulación</strong>: no se conecta con ninguna pasarela, no se
+          procesa ningún cobro y no se envía ningún paquete. Los productos, los precios y los
+          proveedores son datos de ejemplo hechos para que los cálculos de margen tengan sentido.
+        </p>
+        <p>
+          Los pedidos, la cesta y la lista de deseos se guardan solo en tu navegador. No hay
+          servidor detrás, así que tampoco hay nada que enviar a ninguna parte.
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="landing-foot">
+  <div class="container container--wide landing-foot__inner">
+    <p class="text-sm muted">
+      NEXYTT · demostración técnica. El contrato completo entre módulos está en
+      <a href="docs/ARQUITECTURA.md">docs/ARQUITECTURA.md</a>.
+    </p>
+    <nav class="landing-foot__links" aria-label="Enlaces del pie">
+      <a href="casino/index.html">Casino</a>
+      <a href="casino/fairness.html">Justicia verificable</a>
+      <a href="shop/index.html">Tienda</a>
+      <a href="docs/ARQUITECTURA.md">Arquitectura</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
