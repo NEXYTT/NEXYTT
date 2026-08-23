@@ -88,12 +88,19 @@ function syncCards(container, cards, { hideIndex = -1 } = {}) {
  * The counter above each hand. "17 blando" is the useful case: it tells the
  * player the ace can still drop to 1, so the hand cannot bust on the next card.
  */
-function valueBadge(node, cards, { natural = true } = {}) {
+function valueBadge(node, cards, { natural = true, pending = false } = {}) {
   const value = handValue(cards);
   node.className = "bj-value";
   if (!cards.length) {
     node.textContent = "—";
     node.removeAttribute("title");
+    return;
+  }
+  // A hand still waiting for a card — the dealer's hole card, or a split hand
+  // that has not reached its turn — shows what is known plus an open question.
+  if (pending) {
+    node.textContent = `${value.total} + ?`;
+    node.title = "Falta una carta por descubrir en esta mano.";
     return;
   }
   if (value.blackjack && natural) {
@@ -192,8 +199,8 @@ function renderTable({ dealerLimit = Infinity, playerLimit = Infinity, results =
   syncCards(dealerCards, shownDealer, { hideIndex: hideHole });
 
   if (hideHole >= 0) {
-    dealerValue.className = "bj-value";
-    dealerValue.textContent = `${handValue(shownDealer.slice(0, 1)).total} + ?`;
+    // Only the upcard counts towards the visible total while the hole card is down.
+    valueBadge(dealerValue, shownDealer.slice(0, 1), { pending: true });
     dealerValue.title = "La carta tapada no se revela hasta que terminas tu mano.";
   } else {
     valueBadge(dealerValue, shownDealer);
@@ -209,7 +216,10 @@ function renderTable({ dealerLimit = Infinity, playerLimit = Infinity, results =
     syncCards(slot.cards, shown);
     slot.label.textContent = state.hands.length > 1 ? `Mano ${index + 1}` : "Tu mano";
     // A 21 built on a split hand is never a natural, so it must not be labelled one.
-    valueBadge(slot.value, shown, { natural: !hand.fromSplit });
+    valueBadge(slot.value, shown, {
+      natural: !hand.fromSplit,
+      pending: shown.length === 1,
+    });
 
     const active = state.phase === "player" && state.active === index && !hand.done;
     slot.root.classList.toggle("is-active", active);
@@ -271,7 +281,7 @@ const hintButton = el("button.btn.btn--ghost.btn--sm.btn--block", {
   title: "Consultar la estrategia básica para esta situación",
 }, "Sugerencia de estrategia básica");
 
-const actionsPanel = el("div.panel.stack", { style: { "--stack-gap": "var(--space-3)" } }, [
+const actionsPanel = el("div.panel.stack.bj-panel--play", { style: { "--stack-gap": "var(--space-3)" } }, [
   el("span.label", {}, "Tu turno"),
   insuranceBox,
   el("div.bj-actions", {}, [
@@ -573,7 +583,7 @@ async function startHand(stake) {
 /* --- Side panels ------------------------------------------------------------ */
 
 const rulesPanel = () =>
-  el("div.panel.stack", { style: { "--stack-gap": "var(--space-3)" } }, [
+  el("div.panel.stack.bj-panel--rules", { style: { "--stack-gap": "var(--space-3)" } }, [
     el("span.label", {}, "Reglas de la mesa"),
     el("dl.bj-rules", {}, [
       el("div", {}, [el("dt", {}, "Barajas"), el("dd", {}, String(DECKS))]),
@@ -602,8 +612,12 @@ const bet = betControls({
   onAction: (stake) => startHand(stake),
 });
 
+// Panel roles the phone layout reorders around the felt (see blackjack.css).
+bet.root.classList.add("bj-panel--bet");
+stats.root.classList.add("bj-panel--stats");
+
 append($("#blackjack"), [
-  el("div.game-layout", {}, [
+  el("div.game-layout.bj-layout", {}, [
     table,
     el("aside.game-controls", {}, [bet.root, actionsPanel, rulesPanel(), stats.root]),
   ]),

@@ -1,0 +1,378 @@
+/* ==========================================================================
+   Dados — barra de objetivo bicolor, marcador de resultado y cifras en vivo.
+   Requires tokens.css, base.css and casino.css. No literal colours here:
+   the winning zone borrows --win, the losing zone --loss, the handle --accent.
+   ========================================================================== */
+
+.stage--dice {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dice-board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+/* --- Target bar ----------------------------------------------------------- */
+/*
+   Three layers share one horizontal 0–100 coordinate space:
+     · the bicolour zones, split at --split (the target)
+     · the drawn handle, centred on that same --split
+     · the result marker, at --roll
+   The native range input sits on top, invisible, and is inset by exactly the
+   unusable margins (2 % and 98 %) so its thumb travels the legal target range
+   and lands pixel-on-pixel with the drawn handle. Its own thumb is 2 px wide
+   and transparent, which keeps that mapping linear.
+*/
+.dice-bar {
+  --split: 50%;
+  --roll: 50%;
+  --marker-h: 84px;
+  --track-h: 56px;
+  position: relative;
+  padding-top: var(--marker-h);
+}
+
+.dice-bar__track {
+  position: relative;
+  height: var(--track-h);
+  display: flex;
+  align-items: center;
+}
+
+.dice-bar__zones {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  /* Hard stop at the target: no gradient blur, the boundary is the bet. */
+  background: linear-gradient(
+    90deg,
+    var(--zone-a) 0 var(--split),
+    var(--zone-b) var(--split) 100%
+  );
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
+  transition: background var(--dur-fast) linear;
+}
+.dice-bar__track[data-direction="under"] {
+  --zone-a: color-mix(in srgb, var(--win) 68%, var(--bg-inset));
+  --zone-b: color-mix(in srgb, var(--loss) 52%, var(--bg-inset));
+}
+.dice-bar__track[data-direction="over"] {
+  --zone-a: color-mix(in srgb, var(--loss) 52%, var(--bg-inset));
+  --zone-b: color-mix(in srgb, var(--win) 68%, var(--bg-inset));
+}
+
+/* Decimal gridlines, so the eye can read a target off the bar without the
+   numeric field. Every 10 %, with the midpoint reinforced. */
+.dice-bar__zones::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.22) 0 1px,
+      transparent 1px 10%
+    );
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.dice-bar__knob {
+  position: absolute;
+  left: var(--split);
+  top: 50%;
+  width: 22px;
+  height: 44px;
+  margin-top: -22px;
+  margin-left: -11px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent-lo));
+  border: 1px solid var(--accent-lo);
+  box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  grid-auto-flow: column;
+}
+/* Grip lines: three hairlines that make the handle read as draggable. */
+.dice-bar__grip {
+  width: 1px;
+  height: 16px;
+  background: var(--accent-fg);
+  opacity: 0.55;
+}
+.dice-bar__track.is-focused .dice-bar__knob {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dice-bar__input {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: ew-resize;
+}
+.dice-bar__input:focus { outline: none; }
+.dice-bar__input::-webkit-slider-runnable-track { height: 100%; background: none; }
+.dice-bar__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 2px;
+  height: 100%;
+  background: transparent;
+}
+.dice-bar__input::-moz-range-track { height: 100%; background: none; border: 0; }
+.dice-bar__input::-moz-range-thumb { width: 2px; height: 100%; border: 0; background: transparent; }
+
+/* --- Result marker -------------------------------------------------------- */
+
+.dice-bar__marker {
+  position: absolute;
+  top: 0;
+  left: var(--roll);
+  height: var(--marker-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: left var(--dur-slow) var(--ease-out);
+}
+.dice-bar__marker.is-idle { opacity: 0.35; }
+
+.dice-bar__value {
+  font-family: var(--font-mono);
+  font-size: clamp(var(--text-xl), 6.5vw, var(--text-3xl));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-elev-3);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+/* Near the ends of the bar the bubble is pinned to one side of the needle so it
+   never leaves the stage; the needle itself stays exactly on the result. */
+.dice-bar__marker[data-align="start"] .dice-bar__value { transform: translateX(50%); }
+.dice-bar__marker[data-align="end"] .dice-bar__value { transform: translateX(-50%); }
+
+.dice-bar__marker--win .dice-bar__value {
+  color: var(--win);
+  border-color: var(--win);
+  background: color-mix(in srgb, var(--win) 18%, var(--bg-elev-3));
+}
+.dice-bar__marker--loss .dice-bar__value {
+  color: var(--loss);
+  border-color: var(--loss);
+  background: color-mix(in srgb, var(--loss) 18%, var(--bg-elev-3));
+}
+
+.dice-bar__needle {
+  width: 2px;
+  /* The marker column ends at the top of the track, but the bar itself is
+     centred inside it — the negative margin lets the needle reach down and
+     touch the number's actual position on the bar. */
+  height: 36px;
+  margin-bottom: -18px;
+  background: currentColor;
+  opacity: 0.7;
+}
+.dice-bar__marker--win .dice-bar__needle { color: var(--win); opacity: 1; }
+.dice-bar__marker--loss .dice-bar__needle { color: var(--loss); opacity: 1; }
+
+/* --- Scale ---------------------------------------------------------------- */
+
+.dice-bar__scale {
+  position: relative;
+  height: 20px;
+  margin-top: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--fg-subtle);
+}
+.dice-bar__tick {
+  position: absolute;
+  left: var(--at);
+  transform: translateX(-50%);
+}
+.dice-bar__tick:first-child { transform: none; }
+.dice-bar__tick:last-child { transform: translateX(-100%); }
+
+/* --- Live figures --------------------------------------------------------- */
+
+.dice-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.dice-figures .stat {
+  text-align: center;
+  padding: var(--space-3) var(--space-2);
+}
+/* Three-up at 390 px leaves ~79 px of content per cell, and "MULTIPLICADOR" is
+   a single unbreakable word: the shared uppercase-and-tracked label style does
+   not fit. Sentence case at the same size does, with hyphenation as a backstop. */
+.dice-figures .stat__label {
+  text-transform: none;
+  letter-spacing: 0;
+  hyphens: auto;
+}
+.dice-figures .stat__value {
+  /* Shrinks with the viewport so "48.500,00" still fits three-up at 390 px. */
+  font-size: clamp(var(--text-md), 3.6vw, var(--text-2xl));
+  overflow-wrap: anywhere;
+}
+.dice-figures .stat__value.is-profit { color: var(--accent); }
+
+/* --- Target controls ------------------------------------------------------ */
+
+.dice-target {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+@media (max-width: 520px) {
+  .dice-target { grid-template-columns: 1fr; }
+}
+.dice-target .input { font-family: var(--font-mono); font-weight: 700; }
+.dice-target__swap { min-height: 42px; }
+
+.dice-condition {
+  font-size: var(--text-sm);
+  color: var(--fg-muted);
+  text-align: center;
+}
+.dice-condition b { color: var(--fg); }
+
+/* --- Fairness receipt ----------------------------------------------------- */
+
+.dice-receipt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  font-size: var(--text-xs);
+}
+.dice-receipt__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: baseline;
+}
+.dice-receipt__item {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  min-width: 0;
+}
+.dice-receipt__key {
+  color: var(--fg-subtle);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+.dice-receipt__value {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+/* The whole point of this game: the arithmetic that turns the round's first
+   float into the number on screen, spelled out so it can be redone by hand. */
+.dice-receipt__math {
+  font-family: var(--font-mono);
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+.dice-receipt__math b { color: var(--accent); }
+.dice-receipt__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* --- Autoplay panel ------------------------------------------------------- */
+
+.dice-auto__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+/* The strategy selects hold sentences ("Volver a la base"), which a native
+   select truncates rather than wraps, so they get a row each. */
+.dice-auto__rows {
+  display: grid;
+  gap: var(--space-3);
+}
+.dice-auto__pct { display: grid; gap: var(--space-2); }
+.dice-auto__pct[hidden] { display: none; }
+.dice-auto__status {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+  min-height: 1.2em;
+}
+
+/* --- Pricing explainer ---------------------------------------------------- */
+
+.dice-explain summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: 650;
+  list-style: none;
+}
+.dice-explain summary::-webkit-details-marker { display: none; }
+.dice-explain[open] summary { margin-bottom: var(--space-3); }
+.dice-explain[open] summary svg { transform: rotate(180deg); }
+.dice-explain p {
+  font-size: var(--text-xs);
+  color: var(--fg-muted);
+}
+.dice-explain code {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+/* --- Phone fallback for the shared top bar -------------------------------- */
+/* mountShell() lays brand + balance + the two dialog buttons out as a single
+   non-wrapping row, which is wider than a 390 px viewport and would make the
+   whole page scroll sideways. The shell is shared code, so — as in the other
+   game stylesheets — the fix lives here: let that row wrap on narrow screens. */
+@media (max-width: 620px) {
+  .topbar__inner {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+    padding-block: var(--space-2);
+  }
+  .brand__sub { display: none; }
+  .balance { flex: 1 1 auto; justify-content: space-between; }
+}
