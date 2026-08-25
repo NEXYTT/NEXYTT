@@ -13,7 +13,8 @@
     "rtp": "node tests/rtp-report.mjs",
     "test:contrast": "node tests/contrast.mjs",
     "test:casino": "node tests/casino-e2e.mjs",
-    "test:robustness": "node tests/robustness.mjs"
+    "test:robustness": "node tests/robustness.mjs",
+    "preview": "node tools/build-artifact.mjs > casino-preview.html"
   },
   "engines": {
     "node": ">=22"

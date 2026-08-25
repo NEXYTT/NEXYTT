@@ -9,3 +9,6 @@ node_modules/
 /tmp-*
 *.tmp.mjs
 /scratch/
+
+# Generated single-file preview
+/casino-preview.html
