@@ -1,5 +1,5 @@
 /* =====================================================================
-   HUD DE VEHICULO
+   HUD DE VEHICULO — cuatro velocímetros
    ===================================================================== */
 
 .vehicle {
@@ -8,18 +8,24 @@
   bottom: 4.2vh;
   display: grid;
   grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
   column-gap: 14px;
   row-gap: 10px;
   align-items: end;
+  justify-items: end;
   transform: scale(var(--hud-scale));
   transform-origin: bottom right;
 }
+.vehicle[data-style="bar"],
+.vehicle[data-style="minimal"] { display: block; }
 
-/* ---------- Barras laterales (gasolina / motor) ---------- */
-.vehicle__side {
-  grid-column: 1;
-  grid-row: 1;
+.vehicle > .vmeters { grid-column: 1; grid-row: 1; }
+.vehicle > .gauge   { grid-column: 2; grid-row: 1; }
+.vehicle > .vpills  { grid-column: 1 / -1; grid-row: 2; }
+
+/* ---------------------------------------------------------------------
+   Medidores de gasolina y motor
+   --------------------------------------------------------------------- */
+.vmeters {
   display: flex;
   gap: 10px;
   align-items: flex-end;
@@ -31,11 +37,8 @@
   backdrop-filter: blur(20px) saturate(150%);
   -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
-
-.vbar { display: flex; flex-direction: column; align-items: center; gap: 7px; }
-.vbar.is-hidden { display: none; }
-
-.vbar__track {
+.vmeter { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.vmeter__track {
   position: relative;
   width: 9px;
   height: 76px;
@@ -45,33 +48,30 @@
   -webkit-mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
           mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
 }
-.vbar__fill {
+.vmeter .f {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 0%;
+  inset: auto 0 0 0;
+  height: var(--v, 0%);
+  background: var(--c);
   transition: height .3s var(--ease), background .3s var(--ease);
 }
-.vbar[data-metric="fuel"]   .vbar__fill { background: var(--m-fuel);   }
-.vbar[data-metric="engine"] .vbar__fill { background: var(--m-engine); }
+.vmeter__icon { width: 15px; height: 15px; color: var(--c); }
 
-.vbar.is-warn   .vbar__fill { background: var(--warn) !important; }
-.vbar.is-danger .vbar__fill { background: var(--danger) !important; animation: arcPulse 1.1s ease-in-out infinite; }
-
-.vbar__icon { width: 15px; height: 15px; color: var(--text-dim); }
-.vbar.is-warn   .vbar__icon { color: var(--warn); }
-.vbar.is-danger .vbar__icon { color: var(--danger); }
-
-/* ---------- Reloj principal ---------- */
-.gauge {
-  grid-column: 2;
-  grid-row: 1;
-  position: relative;
-  width: 196px;
-  height: 196px;
+.vmeters--h { display: flex; gap: 14px; padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; }
+.vmeter--h { flex-direction: row; align-items: center; gap: 7px; }
+.vmeter--h .vmeter__track {
+  width: 54px;
+  height: 5px;
+  -webkit-mask-image: repeating-linear-gradient(to right, #000 0 5px, transparent 5px 8px);
+          mask-image: repeating-linear-gradient(to right, #000 0 5px, transparent 5px 8px);
 }
+.vmeter--h .f { inset: 0 auto 0 0; height: 100%; width: var(--v, 0%); transition: width .3s var(--ease); }
+.vmeter--h .vmeter__icon { width: 13px; height: 13px; }
 
+/* ---------------------------------------------------------------------
+   Reloj (estilos circle y needle)
+   --------------------------------------------------------------------- */
+.gauge { position: relative; width: 196px; height: 196px; }
 .gauge__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
 .gauge::before {
@@ -86,6 +86,8 @@
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
+.gauge .arc { fill: none; stroke-linecap: butt; }
+.gauge .arc--bg { stroke: rgba(255, 255, 255, .1); stroke-dasharray: 100 100; }
 .arc--speed {
   stroke: var(--accent);
   color: var(--accent);
@@ -96,14 +98,11 @@
 }
 .arc--rpm {
   stroke: rgba(255, 255, 255, .32);
-  color: rgba(255, 255, 255, .32);
   stroke-width: 6;
   stroke-dasharray: 0 100;
   transition: stroke-dasharray .08s linear, stroke .2s var(--ease);
 }
-.arc--rpm.is-redline { stroke: var(--danger); color: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
-#arc-rpm-bg   { stroke-width: 6;  stroke: rgba(255, 255, 255, .07); }
-#arc-speed-bg { stroke-width: 15; stroke: rgba(255, 255, 255, .10); }
+.arc--rpm.is-redline { stroke: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
 
 .gauge__center {
   position: absolute;
@@ -112,10 +111,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0;
   pointer-events: none;
 }
-.gauge__speed {
+.gauge__speed, .gauge__digital .sp-value {
   font-family: 'Rajdhani', 'Inter', sans-serif;
   font-size: 52px;
   font-weight: 700;
@@ -124,7 +122,7 @@
   font-variant-numeric: tabular-nums;
   text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
 }
-.gauge__units {
+.gauge__units, .gauge__digital .sp-units {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .16em;
@@ -153,8 +151,63 @@
 }
 .gauge__gear.is-reverse { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
 
+/* ---------- Estilo 2 · AGUJA ---------- */
+.gauge--needle .dial { fill: none; stroke: rgba(255, 255, 255, .08); stroke-width: 1; }
+.gauge--needle .tick { stroke: rgba(255, 255, 255, .3); stroke-width: 1.4; }
+.gauge--needle .tick--major { stroke: rgba(255, 255, 255, .68); stroke-width: 2.2; }
+.gauge--needle .tnum {
+  fill: var(--text-dim);
+  stroke: none;
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+.gauge--needle .redline { fill: none; stroke: var(--danger); stroke-width: 3.5; opacity: .85; }
+
+.needle {
+  position: absolute;
+  left: 50%;
+  top: calc(50% - 2px);
+  width: 74px;
+  height: 4px;
+  transform-origin: 0 50%;
+  transition: transform .14s var(--ease);
+  pointer-events: none;
+}
+.needle i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(90deg, rgba(255, 84, 104, .12), var(--danger));
+  box-shadow: 0 0 10px rgba(255, 84, 104, .5);
+}
+.needle__cap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 15px;
+  height: 15px;
+  margin: -7.5px 0 0 -7.5px;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 1px solid var(--border-strong);
+}
+.gauge--needle .gauge__digital {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.gauge--needle .gauge__digital .sp-value { font-size: 30px; }
+.gauge--needle .gauge__gear { bottom: 8px; }
+
 /* ---------- Intermitentes ---------- */
-.gauge__blinker {
+.blink {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -166,21 +219,14 @@
   opacity: .25;
   transition: opacity .12s linear, color .12s linear;
 }
-.gauge__blinker svg { width: 18px; height: 18px; }
-.gauge__blinker--left  { left: 34px;  }
-.gauge__blinker--right { right: 34px; }
-.gauge__blinker.is-on { color: var(--ok); opacity: 1; animation: blink .5s steps(1) infinite; }
+.blink svg { width: 18px; height: 18px; }
+.blink--left  { left: 34px;  }
+.blink--right { right: 34px; }
+.blink.is-on { color: var(--ok); opacity: 1; animation: blink .5s steps(1) infinite; }
 @keyframes blink { 50% { opacity: .12; } }
 
-/* ---------- Pastillas de estado ---------- */
-.vehicle__pills {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  justify-self: end;
-  display: flex;
-  gap: 6px;
-}
-
+/* ---------- Pastillas ---------- */
+.vpills { display: flex; gap: 6px; }
 .pill {
   width: 30px;
   height: 30px;
@@ -196,8 +242,6 @@
   transition: color .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
 }
 .pill svg { width: 15px; height: 15px; }
-.pill.is-hidden { display: none; }
-
 .pill.is-on {
   color: var(--ok);
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
@@ -207,6 +251,141 @@
   color: var(--danger);
   border-color: color-mix(in srgb, var(--danger) 45%, transparent);
   background: color-mix(in srgb, var(--danger) 14%, var(--surface));
-  animation: arcPulse 1s ease-in-out infinite;
+  animation: pulseSoft 1s ease-in-out infinite;
 }
-#pill-lights.is-high { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, transparent); }
+.pill.is-high { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, transparent); }
+
+/* ---------------------------------------------------------------------
+   Estilo 3 · BARRA
+   --------------------------------------------------------------------- */
+.vbarhud {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 318px;
+  padding: 14px 18px 13px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.vbarhud__read { display: flex; align-items: baseline; gap: 9px; padding-right: 58px; }
+.vbarhud__read .sp-value {
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 46px;
+  font-weight: 700;
+  line-height: .86;
+  font-variant-numeric: tabular-nums;
+}
+.vbarhud__unit {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.vbarhud__gear {
+  margin-left: auto;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 8px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--border);
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+  align-self: center;
+}
+.vbarhud__gear.is-reverse { color: var(--warn); }
+
+.vbarhud__rpm {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+  -webkit-mask-image: repeating-linear-gradient(to right, #000 0 6px, transparent 6px 9px);
+          mask-image: repeating-linear-gradient(to right, #000 0 6px, transparent 6px 9px);
+}
+.sp-rpm-lin {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width .1s linear, background .2s var(--ease);
+}
+.sp-rpm-lin.is-redline { background: var(--danger); }
+
+.vbarhud__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.vbarhud .blink { top: 12px; transform: none; }
+.vbarhud .blink--left  { left: auto; right: 46px; }
+.vbarhud .blink--right { right: 18px; }
+
+/* ---------------------------------------------------------------------
+   Estilo 4 · MÍNIMO
+   --------------------------------------------------------------------- */
+.vmini {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 16px 11px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+.vmini .sp-value {
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.vmini__unit {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.vmini__gear {
+  min-width: 24px;
+  height: 20px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--border);
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.vmini .pill { width: 26px; height: 26px; }
+.vmini__fuel {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .14);
+  overflow: hidden;
+}
+.vmini__fuel .f {
+  display: block;
+  height: 100%;
+  width: var(--v, 0%);
+  background: var(--c);
+  transition: width .3s var(--ease);
+}

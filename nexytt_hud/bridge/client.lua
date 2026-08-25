@@ -321,6 +321,25 @@ function Bridge.GetJobLabel()
     return label
 end
 
+--- Nombre legible de un arma. Cada framework guarda su propio catalogo;
+--- si no hay ninguno devolvemos vacio y el HUD muestra solo la municion.
+function Bridge.GetWeaponLabel(hash)
+    local core = Bridge.core
+    if not core then return '' end
+
+    if Bridge.name == 'esx' and core.GetWeaponFromHash then
+        local ok, weapon = pcall(core.GetWeaponFromHash, hash)
+        if ok and type(weapon) == 'table' then return weapon.label or '' end
+    end
+
+    if core.Shared and type(core.Shared.Weapons) == 'table' then
+        local weapon = core.Shared.Weapons[hash]
+        if type(weapon) == 'table' then return weapon.label or '' end
+    end
+
+    return ''
+end
+
 --- Permite que otros resources escriban las necesidades (util en standalone).
 function Bridge.SetNeed(name, value)
     if Bridge.data[name] == nil then return end

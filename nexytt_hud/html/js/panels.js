@@ -38,6 +38,14 @@ const Panels = (() => {
     if (data.job) {
       items.push(`<span class="chip chip--job">${NX.icon('job')}<b>${escapeHtml(data.job)}</b></span>`);
     }
+    if (data.fps !== undefined && data.fps !== null) {
+      const level = data.fps >= 50 ? '' : data.fps >= 30 ? ' is-warn' : ' is-danger';
+      items.push(`<span class="chip${level}">${NX.icon('fps')}<b>${data.fps}</b></span>`);
+    }
+    if (data.ping !== undefined && data.ping !== null) {
+      const level = data.ping <= 80 ? '' : data.ping <= 160 ? ' is-warn' : ' is-danger';
+      items.push(`<span class="chip${level}">${NX.icon('ping')}<b>${data.ping}</b><i>ms</i></span>`);
+    }
 
     chips.innerHTML = items.join('');
     chips.classList.toggle('is-hidden', items.length === 0);
@@ -97,6 +105,30 @@ const Panels = (() => {
     if (on) $('b', radio).textContent = data.radio;
   }
 
+  /* ---------------------------------------------------------------- */
+  const weapon = $('#weapon');
+
+  function updateWeapon(data) {
+    if (!data.visible || NX.settings.showWeapon === false) {
+      weapon.classList.add('is-hidden');
+      return;
+    }
+    weapon.classList.remove('is-hidden');
+
+    $('#weapon-name').textContent = data.label || '';
+    $('#weapon-name').classList.toggle('is-hidden', !data.label);
+
+    const ammo = $('.weapon__ammo', weapon);
+    ammo.classList.toggle('is-hidden', !!data.melee);
+    if (!data.melee) {
+      $('#weapon-clip').textContent = data.clip ?? 0;
+      $('#weapon-reserve').textContent = `/${data.reserve ?? 0}`;
+    }
+
+    weapon.classList.toggle('is-low', !!data.low);
+    weapon.classList.toggle('is-empty', !!data.empty);
+  }
+
   /* Deja las notificaciones justo debajo de la columna derecha. */
   function measureRail() {
     const h = rail.getBoundingClientRect().height;
@@ -108,5 +140,5 @@ const Panels = (() => {
     if (window.ResizeObserver) new ResizeObserver(measureRail).observe(rail);
   }
 
-  return { init, updateServer, updateMoney, updateVoice, measureRail };
+  return { init, updateServer, updateMoney, updateVoice, updateWeapon, measureRail };
 })();

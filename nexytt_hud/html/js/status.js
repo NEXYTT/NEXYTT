@@ -1,19 +1,13 @@
 /* =====================================================================
-   ESTADO DEL JUGADOR
+   ESTADO DEL JUGADOR — ocho estilos
+   ring · bars · circles · squares · minimal · stacked · hexagon · corner
    ===================================================================== */
 
 const Status = (() => {
-  const CX = 120, CY = 120;
-  const R_ARC = 104;          // radio de los arcos de vida y chaleco
-  const R_NEEDS = 117;        // radio donde se apoyan las insignias
-  const NEEDS_FROM = 234;     // arco superior libre para las necesidades
-  const NEEDS_TO   = 306;
 
-  // Vida: nace abajo y crece hacia la izquierda. Chaleco: espejo hacia la derecha.
-  const ARC_HEALTH = [100, 175];
-  const ARC_ARMOR  = [80, 5];
-
-  const NEEDS = [
+  const METRICS = [
+    { key: 'health',  icon: 'heart',   setting: 'showHealth'  },
+    { key: 'armor',   icon: 'shield',  setting: 'showArmor',  hideAtZero: true },
     { key: 'hunger',  icon: 'food',    setting: 'showHunger'  },
     { key: 'thirst',  icon: 'water',   setting: 'showThirst'  },
     { key: 'stress',  icon: 'stress',  setting: 'showStress',  inverted: true },
@@ -21,92 +15,175 @@ const Status = (() => {
     { key: 'stamina', icon: 'stamina', setting: 'showStamina' },
   ];
 
-  const BARS = [
-    { key: 'health',  icon: 'heart'   },
-    { key: 'armor',   icon: 'shield'  },
-    ...NEEDS.map(n => ({ key: n.key, icon: n.icon, inverted: n.inverted, underwaterOnly: n.underwaterOnly })),
-  ];
+  const byKey = Object.fromEntries(METRICS.map(m => [m.key, m]));
 
-  const root  = $('#status');
-  const needsLayer = $('#status-needs');
-  const barsLayer  = $('#status-bars');
+  /* Geometría del estilo "ring": arcos que abrazan un minimapa circular */
+  const CX = 120, CY = 120, R_ARC = 104, R_NEEDS = 117;
+  const ARC_HEALTH = [100, 175];
+  const ARC_ARMOR  = [80, 5];
+  const NEEDS_FROM = 234, NEEDS_TO = 306;
 
-  const badges = {};
-  const bars   = {};
-  let lastVisibleKeys = '';
+  /* Geometría del estilo "corner": abanico desde la esquina superior izquierda */
+  const CORNER_R0 = 82, CORNER_STEP = 21;
 
-  /* ---------------------------------------------------------------- */
-  function buildArcs() {
-    const pairs = [
-      ['health', ARC_HEALTH, '#arc-health-bg', '#arc-health-fill', '#mask-health'],
-      ['armor',  ARC_ARMOR,  '#arc-armor-bg',  '#arc-armor-fill',  '#mask-armor'],
-    ];
+  const root = $('#status');
+  let refs = {};
+  let signature = '';
 
-    pairs.forEach(([, range, bgSel, fillSel, maskSel]) => {
-      const d = NX.arcPath(CX, CY, R_ARC, range[0], range[1]);
-      [bgSel, fillSel, maskSel].forEach(sel => {
-        const node = $(sel);
-        if (node) node.setAttribute('d', d);
-      });
-    });
+  const label = (key) => NX.t(key, key);
+
+  /* ------------------------------------------------------------------
+     Piezas reutilizables
+     ------------------------------------------------------------------ */
+  const ringSvg = (size, stroke) => `
+    <svg class="sti__ring" viewBox="0 0 ${size} ${size}">
+      <circle class="t" cx="${size / 2}" cy="${size / 2}" r="${size / 2 - stroke}" pathLength="100"/>
+      <circle class="f" cx="${size / 2}" cy="${size / 2}" r="${size / 2 - stroke}" pathLength="100"/>
+    </svg>`;
+
+  const items = {
+    bars: m => `
+      <div class="sti sti--bar" data-metric="${m.key}" title="${label(m.key)}">
+        <span class="v">0</span>
+        <div class="t"><i class="f"></i></div>
+        ${NX.icon(m.icon, 'sti__icon')}
+      </div>`,
+
+    circles: m => `
+      <div class="sti sti--circle" data-metric="${m.key}" title="${label(m.key)}">
+        ${ringSvg(46, 3)}
+        ${NX.icon(m.icon, 'sti__icon')}
+        <span class="v">0</span>
+      </div>`,
+
+    squares: m => `
+      <div class="sti sti--square" data-metric="${m.key}" title="${label(m.key)}">
+        <i class="f"></i>
+        ${NX.icon(m.icon, 'sti__icon')}
+        <span class="v">0</span>
+      </div>`,
+
+    minimal: m => `
+      <div class="sti sti--minimal" data-metric="${m.key}" title="${label(m.key)}">
+        ${NX.icon(m.icon, 'sti__icon')}
+        <div class="t"><i class="f"></i></div>
+      </div>`,
+
+    stacked: m => `
+      <div class="sti sti--stacked" data-metric="${m.key}">
+        ${NX.icon(m.icon, 'sti__icon')}
+        <span class="n">${label(m.key)}</span>
+        <div class="t"><i class="f"></i></div>
+        <span class="v">0</span>
+      </div>`,
+
+    hexagon: m => `
+      <div class="sti sti--hex" data-metric="${m.key}" title="${label(m.key)}">
+        <span class="hex"><i class="f"></i></span>
+        ${NX.icon(m.icon, 'sti__icon')}
+        <span class="v">0</span>
+      </div>`,
+  };
+
+  /* ------------------------------------------------------------------
+     Constructores por estilo
+     ------------------------------------------------------------------ */
+  const builders = {
+
+    ring(visible) {
+      const needs = visible.filter(k => k !== 'health' && k !== 'armor');
+      const arcs = [
+        ['health', ARC_HEALTH],
+        ['armor',  ARC_ARMOR],
+      ].filter(([k]) => visible.includes(k));
+
+      const masks = arcs.map(([k, range]) => `
+        <mask id="segmask-${k}">
+          <path d="${NX.arcPath(CX, CY, R_ARC, range[0], range[1])}" fill="none" stroke="#fff"
+                stroke-width="14" stroke-linecap="butt" stroke-dasharray="1.35 0.75" pathLength="100"/>
+        </mask>`).join('');
+
+      const paths = arcs.map(([k, range]) => {
+        const d = NX.arcPath(CX, CY, R_ARC, range[0], range[1]);
+        return `
+          <g mask="url(#segmask-${k})" data-metric="${k}">
+            <path class="arc arc--bg" d="${d}" pathLength="100"/>
+            <path class="arc arc--fill f" d="${d}" pathLength="100"/>
+          </g>`;
+      }).join('');
+
+      const badges = needs.map(k => `
+        <div class="need" data-metric="${k}" title="${label(k)}">
+          ${ringSvg(34, 2.4)}
+          ${NX.icon(byKey[k].icon, 'need__icon')}
+          <span class="v need__value">0</span>
+        </div>`).join('');
+
+      const caps = arcs.map(([k]) => `
+        <span class="cap" data-cap="${k}">
+          ${NX.icon(byKey[k].icon)}<b>0</b>
+        </span>`).join('');
+
+      return `
+        <div class="status__ring-wrap">
+          <svg class="status__rings" viewBox="0 0 240 240"><defs>${masks}</defs>${paths}</svg>
+          <div class="status__needs">${badges}</div>
+        </div>
+        <div class="status__caps">${caps}</div>`;
+    },
+
+    corner(visible) {
+      const size = CORNER_R0 + CORNER_STEP * visible.length + 30;
+      const arcs = visible.map((k, i) => {
+        const r = CORNER_R0 + CORNER_STEP * i;
+        const d = NX.arcPath(0, 0, r, 4, 86);
+        return `
+          <g data-metric="${k}">
+            <path class="arc arc--bg" d="${d}" pathLength="100"/>
+            <path class="arc arc--fill f" d="${d}" pathLength="100"/>
+          </g>`;
+      }).join('');
+
+      const icons = visible.map((k, i) => {
+        const r = CORNER_R0 + CORNER_STEP * i;
+        const p = NX.polar(0, 0, r, 86);
+        return `
+          <div class="corner__icon" data-metric="${k}" title="${label(k)}"
+               style="left:${p.x}px; top:${p.y}px">
+            ${NX.icon(byKey[k].icon)}
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="corner" style="width:${size}px; height:${size}px">
+          <svg class="corner__svg" viewBox="0 0 ${size} ${size}">${arcs}</svg>
+          ${icons}
+        </div>`;
+    },
+  };
+
+  ['bars', 'circles', 'squares', 'minimal', 'stacked', 'hexagon'].forEach(style => {
+    builders[style] = (visible) => `
+      <div class="stpanel stpanel--${style}">
+        ${visible.map(k => items[style](byKey[k])).join('')}
+      </div>`;
+  });
+
+  /* ------------------------------------------------------------------
+     Visibilidad
+     ------------------------------------------------------------------ */
+  function isVisible(meta, value, data) {
+    const s = NX.settings;
+    if (meta.setting && s[meta.setting] === false) return false;
+    if (meta.hideAtZero && value <= 0) return false;
+    if (meta.underwaterOnly && !data.underwater && value >= 100) return false;
+    if (s.hideWhenFull) {
+      if (meta.inverted && value <= 0) return false;
+      if (!meta.inverted && value >= 100) return false;
+    }
+    return true;
   }
 
-  function buildNeeds() {
-    needsLayer.innerHTML = '';
-    NEEDS.forEach(need => {
-      const node = NX.el('div', 'need');
-      node.dataset.metric = need.key;
-      node.innerHTML = `
-        <svg class="need__ring" viewBox="0 0 34 34">
-          <circle class="t" cx="17" cy="17" r="15" pathLength="100"/>
-          <circle class="f" cx="17" cy="17" r="15" pathLength="100"/>
-        </svg>
-        ${NX.icon(need.icon, 'need__icon')}
-        <span class="need__value">0</span>`;
-      needsLayer.appendChild(node);
-      badges[need.key] = {
-        node,
-        fill: $('.f', node),
-        value: $('.need__value', node),
-      };
-    });
-  }
-
-  function buildBars() {
-    barsLayer.innerHTML = '';
-    BARS.forEach(bar => {
-      const node = NX.el('div', 'sbar');
-      node.dataset.metric = bar.key;
-      node.innerHTML = `
-        <span class="sbar__value">0</span>
-        <div class="sbar__track"><div class="sbar__fill"></div></div>
-        ${NX.icon(bar.icon, 'sbar__icon')}`;
-      barsLayer.appendChild(node);
-      bars[bar.key] = { node, fill: $('.sbar__fill', node), value: $('.sbar__value', node) };
-    });
-  }
-
-  /** Reparte las insignias visibles a lo largo del arco superior. */
-  function layoutNeeds(visible) {
-    const n = visible.length;
-    if (!n) return;
-
-    const span = NEEDS_TO - NEEDS_FROM;
-    // Con pocas insignias las juntamos en el centro del arco en vez de estirarlas.
-    const used = Math.min(span, n * 19);
-    const from = NEEDS_FROM + (span - used) / 2;
-    const step = n > 1 ? used / (n - 1) : 0;
-
-    visible.forEach((key, i) => {
-      const angle = n > 1 ? from + step * i : from + used / 2;
-      const p = NX.polar(CX, CY, R_NEEDS, angle);
-      const node = badges[key].node;
-      node.style.left = `${(p.x / 240) * 100}%`;
-      node.style.top  = `${(p.y / 240) * 100}%`;
-    });
-  }
-
-  /* ---------------------------------------------------------------- */
   function levelFor(meta, value, warnAt, dangerAt) {
     if (meta.inverted) {
       if (value >= 80) return 'danger';
@@ -116,93 +193,105 @@ const Status = (() => {
     return NX.level(value, warnAt, dangerAt);
   }
 
-  function shouldShow(meta, value, data) {
-    const s = NX.settings;
-    if (meta.setting && s[meta.setting] === false) return false;
-    if (meta.underwaterOnly && !data.underwater && value >= 100) return false;
-    if (s.hideWhenFull) {
-      if (meta.inverted && value <= 0) return false;
-      if (!meta.inverted && value >= 100) return false;
+  /* ------------------------------------------------------------------
+     Reconstrucción
+     ------------------------------------------------------------------ */
+  function rebuild(style, visible) {
+    root.dataset.style = style;
+    root.innerHTML = (builders[style] || builders.bars)(visible);
+
+    refs = {};
+    $$('[data-metric]', root).forEach(node => {
+      const key = node.dataset.metric;
+      if (refs[key]) return;                    // el primero manda (arco antes que icono)
+      refs[key] = { node, fill: $('.f', node), value: $('.v', node) };
+    });
+
+    // Los iconos sueltos del estilo corner comparten data-metric con el arco
+    if (style === 'corner') {
+      $$('.corner__icon', root).forEach(node => {
+        const ref = refs[node.dataset.metric];
+        if (ref) ref.icon = node;
+      });
     }
-    return true;
+
+    if (style === 'ring') layoutNeeds(visible.filter(k => k !== 'health' && k !== 'armor'));
   }
 
-  /* ---------------------------------------------------------------- */
+  /** Reparte las insignias del estilo ring por el arco superior. */
+  function layoutNeeds(keys) {
+    const n = keys.length;
+    if (!n) return;
+
+    const span = NEEDS_TO - NEEDS_FROM;
+    const used = Math.min(span, n * 19);
+    const from = NEEDS_FROM + (span - used) / 2;
+    const step = n > 1 ? used / (n - 1) : 0;
+
+    keys.forEach((key, i) => {
+      const node = $(`.need[data-metric="${key}"]`, root);
+      if (!node) return;
+      const angle = n > 1 ? from + step * i : from + used / 2;
+      const p = NX.polar(CX, CY, R_NEEDS, angle);
+      node.style.left = `${(p.x / 240) * 100}%`;
+      node.style.top  = `${(p.y / 240) * 100}%`;
+    });
+  }
+
+  /* ------------------------------------------------------------------
+     Actualización
+     ------------------------------------------------------------------ */
   function update(data) {
-    const s = NX.settings;
+    const style = NX.settings.statusStyle || 'ring';
     const warnAt = data.warnAt ?? 25;
     const dangerAt = data.dangerAt ?? 12;
 
-    /* --- Vida y chaleco --- */
-    const health = { el: $('#arc-health-fill'), cap: $('#cap-health'), value: data.health, show: s.showHealth !== false };
-    const armor  = { el: $('#arc-armor-fill'),  cap: $('#cap-armor'),  value: data.armor,  show: s.showArmor !== false && data.armor > 0 };
+    const visible = METRICS
+      .filter(m => isVisible(m, data[m.key] ?? 0, data))
+      .map(m => m.key);
 
-    [health, armor].forEach(m => {
-      const level = NX.level(m.value, warnAt, dangerAt);
-      NX.setArc(m.el, m.show ? m.value : 0);
-      NX.applyLevel(m.el, level);
-      m.el.parentNode.classList.toggle('is-invisible', !m.show);
-
-      m.cap.classList.toggle('is-hidden', !m.show);
-      NX.applyLevel(m.cap, level);
-      const num = $('b', m.cap);
-      if (num) num.textContent = Math.round(m.value);
-    });
-
-    /* --- Necesidades --- */
-    const visible = [];
-    NEEDS.forEach(meta => {
-      const value = data[meta.key] ?? 0;
-      const badge = badges[meta.key];
-      const show = shouldShow(meta, value, data);
-
-      badge.node.classList.toggle('is-out', !show);
-      if (show) visible.push(meta.key);
-
-      NX.setArc(badge.fill, value);
-      const level = levelFor(meta, value, warnAt, dangerAt);
-      NX.applyLevel(badge.node, level);
-      badge.value.textContent = Math.round(value);
-    });
-
-    const key = visible.join(',');
-    if (key !== lastVisibleKeys) {
-      lastVisibleKeys = key;
-      layoutNeeds(visible);
+    const sig = `${style}|${visible.join(',')}`;
+    if (sig !== signature) {
+      signature = sig;
+      rebuild(style, visible);
     }
 
-    /* --- Modo barras --- */
-    BARS.forEach(meta => {
-      const bar = bars[meta.key];
-      if (!bar) return;
-      const value = data[meta.key] ?? 0;
-      const settingKey = 'show' + meta.key.charAt(0).toUpperCase() + meta.key.slice(1);
-      const show = s[settingKey] !== false
-        && !(meta.underwaterOnly && !data.underwater && value >= 100)
-        && !(s.hideWhenFull && !meta.inverted && value >= 100)
-        && !(s.hideWhenFull && meta.inverted && value <= 0)
-        && !(meta.key === 'armor' && value <= 0);
+    visible.forEach(key => {
+      const ref = refs[key];
+      if (!ref) return;
 
-      bar.node.classList.toggle('is-out', !show);
-      bar.fill.style.height = `${NX.clamp(value, 0, 100)}%`;
-      bar.value.textContent = Math.round(value);
-      NX.applyLevel(bar.node, levelFor(meta, value, warnAt, dangerAt));
+      const meta = byKey[key];
+      const value = NX.clamp(data[key] ?? 0, 0, 100);
+      const level = levelFor(meta, value, warnAt, dangerAt);
+
+      ref.node.style.setProperty('--v', `${value}%`);
+      if (ref.fill) {
+        if (ref.fill.namespaceURI === 'http://www.w3.org/2000/svg') NX.setArc(ref.fill, value);
+      }
+      if (ref.value) ref.value.textContent = Math.round(value);
+
+      NX.applyLevel(ref.node, level);
+      if (ref.icon) NX.applyLevel(ref.icon, level);
+
+      if (style === 'ring') {
+        const cap = $(`.cap[data-cap="${key}"]`, root);
+        if (cap) {
+          NX.applyLevel(cap, level);
+          const num = $('b', cap);
+          if (num) num.textContent = Math.round(value);
+        }
+      }
     });
   }
 
-  function applyLayout() {
-    const ring = (NX.settings.statusLayout || 'ring') === 'ring';
-    root.classList.toggle('status--ring', ring);
-    root.classList.toggle('status--bars', !ring);
-    lastVisibleKeys = '';
+  function applyStyle() {
+    signature = '';   // fuerza reconstrucción en el siguiente tick
+    const style = NX.settings.statusStyle || 'ring';
+    root.dataset.style = style;
+    document.getElementById('hud').dataset.statusStyle = style;
   }
 
-  function init() {
-    buildArcs();
-    buildNeeds();
-    buildBars();
-    applyLayout();
-  }
+  function init() { applyStyle(); }
 
-  return { init, update, applyLayout };
+  return { init, update, applyStyle, STYLES: ['ring', 'bars', 'circles', 'squares', 'minimal', 'stacked', 'hexagon', 'corner'] };
 })();

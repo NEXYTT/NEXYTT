@@ -232,6 +232,34 @@
 .seg button:hover { color: var(--text); }
 .seg button.is-active { background: var(--accent); color: #fff; box-shadow: 0 2px 10px var(--accent-soft); }
 
+/* ---------- Selector de estilo ---------- */
+.styles { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 320px; }
+.stylechip {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, .04);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .16s var(--ease);
+  white-space: nowrap;
+}
+.stylechip:hover { color: var(--text); background: rgba(255, 255, 255, .09); }
+.stylechip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 10px var(--accent-soft);
+}
+
+/* ---------- Botones dentro de una fila ---------- */
+.rowbtns { display: flex; gap: 8px; }
+.rowbtns .btn { height: 32px; padding: 0 14px; font-size: 12.5px; }
+
 /* ---------- Colores ---------- */
 .swatches { display: flex; gap: 7px; flex-wrap: wrap; justify-content: flex-end; max-width: 288px; }
 .swatch {

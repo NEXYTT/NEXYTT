@@ -16,6 +16,8 @@ const Settings = (() => {
       server: 'Servidor', notify: 'Notificaciones', about: 'Acerca de',
       interface: 'Interfaz', colors: 'Color y tamaño', metrics: 'Métricas visibles',
       placement: 'Colocación', gauges: 'Indicadores', panels: 'Paneles', extras: 'Extras',
+      styles: 'Estilo', perf: 'Rendimiento', freeMove: 'Posición libre',
+      moveBtn: 'Mover elementos', resetPos: 'Restablecer posiciones',
       reset: 'Restablecer', save: 'Guardar', hint: 'Los cambios se guardan en tu PC y se aplican al instante.',
       title: 'Ajustes del HUD',
     },
@@ -24,6 +26,8 @@ const Settings = (() => {
       server: 'Server', notify: 'Notifications', about: 'About',
       interface: 'Interface', colors: 'Color & size', metrics: 'Visible metrics',
       placement: 'Placement', gauges: 'Gauges', panels: 'Panels', extras: 'Extras',
+      styles: 'Style', perf: 'Performance', freeMove: 'Free positioning',
+      moveBtn: 'Move elements', resetPos: 'Restore positions',
       reset: 'Restore', save: 'Save', hint: 'Changes are stored on your PC and applied instantly.',
       title: 'HUD Settings',
     },
@@ -51,6 +55,18 @@ const Settings = (() => {
           ],
         },
         {
+          title: tx('freeMove'),
+          rows: [
+            { type: 'buttons', name: { es: 'Colocar los bloques a mano', en: 'Place the blocks by hand' },
+              desc: { es: 'Arrastra estado, velocímetro, brújula, paneles y notificaciones donde quieras.',
+                      en: 'Drag status, speedometer, compass, panels and notifications anywhere.' },
+              buttons: [
+                { id: 'editor', label: { es: 'Mover elementos', en: 'Move elements' }, primary: true },
+                { id: 'resetPositions', label: { es: 'Restablecer', en: 'Restore' } },
+              ] },
+          ],
+        },
+        {
           title: tx('colors'),
           rows: [
             { key: 'accent', type: 'color', name: { es: 'Color de acento', en: 'Accent color' },
@@ -69,9 +85,19 @@ const Settings = (() => {
         {
           title: tx('placement'),
           rows: [
-            { key: 'statusLayout', type: 'seg', name: { es: 'Diseño', en: 'Layout' },
-              desc: { es: 'Anillos = minimapa circular. Barras = minimapa rectangular por defecto.', en: 'Rings = circular minimap. Bars = default rectangular minimap.' },
-              options: [{ value: 'ring', label: { es: 'Anillos', en: 'Rings' } }, { value: 'bars', label: { es: 'Barras', en: 'Bars' } }] },
+            { key: 'statusStyle', type: 'styles', name: { es: 'Estilo del estado', en: 'Status style' },
+              desc: { es: 'Ocho diseños. Anillos pide un minimapa circular; el resto van encima del minimapa.',
+                      en: 'Eight designs. Rings expects a circular minimap; the rest sit above it.' },
+              options: [
+                { value: 'ring',    label: { es: 'Anillos',  en: 'Rings'    } },
+                { value: 'bars',    label: { es: 'Barras',   en: 'Bars'     } },
+                { value: 'circles', label: { es: 'Círculos', en: 'Circles'  } },
+                { value: 'squares', label: { es: 'Casillas', en: 'Tiles'    } },
+                { value: 'minimal', label: { es: 'Mínimo',   en: 'Minimal'  } },
+                { value: 'stacked', label: { es: 'Lista',    en: 'List'     } },
+                { value: 'hexagon', label: { es: 'Hexágonos',en: 'Hexagons' } },
+                { value: 'corner',  label: { es: 'Esquina',  en: 'Corner'   } },
+              ] },
             { key: 'statusScale', type: 'slider', min: 60, max: 140, step: 1, unit: '%',
               name: { es: 'Tamaño del conjunto', en: 'Cluster scale' } },
             { key: 'statusOffsetX', type: 'slider', min: -80, max: 80, step: 1, unit: 'px',
@@ -104,6 +130,13 @@ const Settings = (() => {
           title: tx('gauges'),
           rows: [
             { key: 'showVehicleHud', type: 'toggle', name: { es: 'Mostrar velocímetro', en: 'Show speedometer' } },
+            { key: 'speedoStyle', type: 'styles', name: { es: 'Velocímetro', en: 'Speedometer' },
+              options: [
+                { value: 'circle',  label: { es: 'Circular', en: 'Circular' } },
+                { value: 'needle',  label: { es: 'Aguja',    en: 'Needle'   } },
+                { value: 'bar',     label: { es: 'Barra',    en: 'Bar'      } },
+                { value: 'minimal', label: { es: 'Mínimo',   en: 'Minimal'  } },
+              ] },
             { key: 'units', type: 'seg', name: { es: 'Unidades', en: 'Units' },
               options: [{ value: 'kmh', label: 'km/h' }, { value: 'mph', label: 'mph' }] },
             { key: 'showRpm',    type: 'toggle', name: { es: 'Revoluciones', en: 'RPM ring' } },
@@ -136,6 +169,15 @@ const Settings = (() => {
             { key: 'showPlayers',     type: 'toggle', name: { es: 'Jugadores conectados', en: 'Players online' } },
             { key: 'showMoney',       type: 'toggle', name: { es: 'Dinero', en: 'Money' } },
             { key: 'showVoice',       type: 'toggle', name: { es: 'Indicador de voz', en: 'Voice indicator' } },
+            { key: 'showWeapon',      type: 'toggle', name: { es: 'Arma y munición', en: 'Weapon and ammo' } },
+          ],
+        },
+        {
+          title: tx('perf'),
+          rows: [
+            { key: 'showFps',  type: 'toggle', name: { es: 'FPS', en: 'FPS' },
+              desc: { es: 'Refresca el panel cada segundo mientras esté activo.', en: 'Refreshes the panel every second while on.' } },
+            { key: 'showPing', type: 'toggle', name: { es: 'Ping', en: 'Ping' } },
           ],
         },
       ],
@@ -186,7 +228,7 @@ const Settings = (() => {
       <div class="row__control"></div>`;
 
     const control = $('.row__control', node);
-    const value = NX.settings[row.key];
+    const value = row.key ? NX.settings[row.key] : undefined;
 
     if (row.type === 'toggle') {
       const sw = NX.el('button', 'switch' + (value ? ' is-on' : ''));
@@ -234,6 +276,41 @@ const Settings = (() => {
         seg.appendChild(btn);
       });
       control.appendChild(seg);
+    }
+
+    if (row.type === 'styles') {
+      const wrap = NX.el('div', 'styles');
+      row.options.forEach(opt => {
+        const btn = NX.el('button', 'stylechip' + (value === opt.value ? ' is-active' : ''), pick(opt.label));
+        btn.type = 'button';
+        btn.addEventListener('click', () => {
+          $$('.stylechip', wrap).forEach(b => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+          commit(row.key, opt.value);
+        });
+        wrap.appendChild(btn);
+      });
+      control.appendChild(wrap);
+    }
+
+    if (row.type === 'buttons') {
+      const wrap = NX.el('div', 'rowbtns');
+      row.buttons.forEach(def => {
+        const btn = NX.el('button', 'btn' + (def.primary ? ' btn--primary' : ' btn--ghost'), pick(def.label));
+        btn.type = 'button';
+        btn.addEventListener('click', () => {
+          if (def.id === 'editor') {
+            close(true);
+            NX.post('openEditor');
+          } else {
+            NX.settings.positions = {};
+            Editor.applyPositions({});
+            NX.post('resetPositions');
+          }
+        });
+        wrap.appendChild(btn);
+      });
+      control.appendChild(wrap);
     }
 
     if (row.type === 'color') {

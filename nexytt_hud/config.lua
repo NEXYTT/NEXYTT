@@ -30,17 +30,21 @@ Config.Tick = {
 --=====================================================================
 
 Config.Commands = {
-    settings = 'hud',          -- /hud abre el menu de ajustes
-    toggle   = 'hudtoggle',    -- /hudtoggle oculta o muestra todo el HUD
-    cinema   = 'cinematic',    -- /cinematic barras negras + HUD oculto
+    settings    = 'hud',           -- /hud abre el menu de ajustes
+    toggle      = 'hudtoggle',     -- /hudtoggle oculta o muestra todo el HUD
+    cinema      = 'cinematic',     -- /cinematic barras negras + HUD oculto
+    editor      = 'hudeditor',     -- /hudeditor mover elementos por la pantalla
+    vehicleMenu = 'vehiclemenu',   -- /vehiclemenu menu cenital
 }
 
 Config.Keys = {
     -- Nombres de tecla de FiveM: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/
-    settings  = 'F7',     -- abrir ajustes    (nil para desactivar)
-    seatbelt  = 'B',      -- cinturon
-    cruise    = 'PAGEUP', -- control de crucero
-    cinematic = nil,      -- modo cine
+    settings    = 'F7',     -- abrir ajustes    (nil para desactivar)
+    seatbelt    = 'B',      -- cinturon
+    cruise      = 'PAGEUP', -- control de crucero
+    vehicleMenu = 'F6',     -- menu cenital del vehiculo
+    editor      = nil,      -- modo mover elementos (tambien /hudeditor)
+    cinematic   = nil,      -- modo cine
 }
 
 --=====================================================================
@@ -100,6 +104,23 @@ Config.Vehicle = {
     cruiseControl  = true,
     -- Solo mostrar el HUD del vehiculo si vas de conductor
     driverOnly     = false,
+}
+
+--=====================================================================
+--  MENU CENITAL DEL VEHICULO
+--=====================================================================
+
+Config.VehicleMenu = {
+    enabled     = true,
+    -- Solo el conductor puede abrir puertas, ventanillas y seguro
+    driverOnly  = true,
+    showDoors   = true,
+    showWindows = true,
+    showTyres   = true,
+    showLock    = true,
+    showEngine  = true,
+    -- Permitir apagar/encender el motor desde el menu
+    allowEngine = true,
 }
 
 -- Deteccion de combustible. 'auto' prueba en orden los resources conocidos
@@ -205,6 +226,8 @@ Config.Server = {
     showId      = true,
     showTime    = true,
     showJob     = true,
+    showFps     = true,
+    showPing    = true,
     -- Hora: 'game' usa la hora in-game, 'real' la del sistema
     timeSource  = 'game',
 }
@@ -239,8 +262,9 @@ Config.Defaults = {
     opacity         = 100,      -- % de opacidad global (30-100)
     theme           = 'dark',   -- dark | midnight | carbon | light
 
-    -- Estado
-    statusLayout    = 'ring',   -- ring | bars
+    -- Estado. Ocho estilos:
+    -- ring · bars · circles · squares · minimal · stacked · hexagon · corner
+    statusStyle     = 'ring',
     statusOffsetX   = 0,        -- px de ajuste fino sobre el minimapa
     statusOffsetY   = 0,
     statusScale     = 100,
@@ -253,7 +277,9 @@ Config.Defaults = {
     showStamina     = true,
     hideWhenFull    = false,    -- ocultar iconos al 100%
 
-    -- Vehiculo
+    -- Vehiculo. Cuatro velocimetros:
+    -- circle · needle · bar · minimal
+    speedoStyle     = 'circle',
     showVehicleHud  = true,
     units           = 'kmh',
     showRpm         = true,
@@ -270,9 +296,17 @@ Config.Defaults = {
     showMoney       = true,
     showVoice       = true,
     showPlayers     = true,
+    showFps         = false,
+    showPing        = false,
+    showWeapon      = true,
 
     -- Extra
     notifySound     = true,
     stressEffects   = true,
     cinematicBars   = false,
+
+    -- Posiciones libres de cada modulo, en % de pantalla.
+    -- Las escribe el editor de arrastre; vacio = posicion por defecto.
+    -- Ej: { status = { x = 2.1, y = 74.0 } }
+    positions       = {},
 }

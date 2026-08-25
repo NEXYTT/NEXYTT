@@ -146,8 +146,11 @@ svg.is-filled { fill: currentColor; stroke: none; }
 .compass {
   position: absolute;
   top: 2.2vh;
-  left: 50%;
-  transform: translateX(-50%) scale(var(--hud-scale));
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
+  transform: scale(var(--hud-scale));
   transform-origin: top center;
   display: flex;
   flex-direction: column;
@@ -335,6 +338,11 @@ svg.is-filled { fill: currentColor; stroke: none; }
 .chip svg { width: 12px; height: 12px; color: var(--accent); flex: none; }
 .chip b { color: var(--text); font-weight: 700; }
 .chip--job { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.chip i { font-style: normal; color: var(--text-faint); margin-left: 1px; }
+.chip.is-warn   { border-color: color-mix(in srgb, var(--warn) 42%, transparent); }
+.chip.is-warn   svg, .chip.is-warn b   { color: var(--warn); }
+.chip.is-danger { border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.chip.is-danger svg, .chip.is-danger b { color: var(--danger); }
 .chip__pair { display: inline-flex; align-items: baseline; }
 .chip__pair i { font-style: normal; color: var(--text-faint); }
 
@@ -388,6 +396,11 @@ svg.is-filled { fill: currentColor; stroke: none; }
    VOZ
    ===================================================================== */
 .voice {
+  position: absolute;
+  left: calc(var(--map-left) + var(--map-w) + 14px);
+  bottom: calc(var(--map-bottom) + 4px);
+  transform: scale(var(--hud-scale));
+  transform-origin: bottom left;
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -399,7 +412,6 @@ svg.is-filled { fill: currentColor; stroke: none; }
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--shadow);
-  align-self: flex-start;
 }
 .voice__mic { display: grid; place-items: center; color: var(--text-faint); transition: color .18s var(--ease); }
 .voice__mic svg { width: 13px; height: 13px; }

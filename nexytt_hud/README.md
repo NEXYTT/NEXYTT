@@ -13,8 +13,10 @@ Detecta el framework solo. Funciona sobre **ESX Legacy**, **QBCore**, **QBox** o
 
 | Módulo | Qué muestra |
 |---|---|
-| **Estado** | Vida y chaleco en arcos segmentados alrededor del minimapa · hambre, sed, estrés, oxígeno y energía en insignias circulares |
-| **Vehículo** | Velocímetro con aguja de velocidad y anillo de RPM (con línea roja), marcha, gasolina, estado del motor, luces, largas, intermitentes |
+| **Estado** | Vida, chaleco, hambre, sed, estrés, oxígeno y energía en **ocho estilos**: anillos, barras, círculos, casillas, mínimo, lista, hexágonos y esquina |
+| **Vehículo** | **Cuatro velocímetros** (circular, aguja, barra y mínimo) con RPM y línea roja, marcha, gasolina, estado del motor, luces, largas e intermitentes |
+| **Menú del vehículo** | Vista cenital accionable: abre y cierra puertas, capó, maletero y ventanillas, ve ruedas pinchadas, seguro, motor, carrocería y gasolina |
+| **Editor de posición** | Arrastra cada bloque del HUD donde quieras, con imán al centro y a los bordes. Se guarda en % por jugador |
 | **Cinturón** | Tecla `B`, bloqueo de salida en marcha, eyección por el parabrisas al chocar sin cinturón, aviso a alta velocidad |
 | **Crucero** | Control de crucero con `Re Pág`, se corta al frenar o poner el freno de mano |
 | **Brújula** | Cinta de rumbo con cardinales, grados, calle actual, cruce y zona |
@@ -22,7 +24,9 @@ Detecta el framework solo. Funciona sobre **ESX Legacy**, **QBCore**, **QBox** o
 | **Dinero** | Efectivo, banco y dinero negro con animación de `+` / `−` al cambiar |
 | **Voz** | Proximidad de pma-voice (susurro / normal / grito), indicador de canal de radio |
 | **Notificaciones** | Sistema propio con exports, y reemplazo opcional de las del framework |
-| **Ajustes** | Menú `/hud` (o `F7`): tema, color de acento, tamaño, opacidad, qué métricas ver, unidades, alineación del grupo de estado… Se guarda por jugador con KVP |
+| **Arma** | Arma equipada, cargador y reserva, con aviso al quedarte corto de munición |
+| **Rendimiento** | FPS y ping del jugador, con color según lo bien o mal que vayan |
+| **Ajustes** | Menú `/hud` (o `F7`): estilo de estado y de velocímetro, tema, color de acento, tamaño, opacidad, qué métricas ver, unidades, alineación… Se guarda por jugador con KVP |
 
 ---
 
@@ -59,12 +63,29 @@ Si querés forzarlo, `Config.Framework = 'esx' | 'qb' | 'qbx' | 'standalone'`.
 
 ---
 
-## Anillos o barras
+## Los ocho estilos de estado
 
-El diseño **Anillos** está pensado para un **minimapa circular**: los arcos abrazan el
-círculo. Con el minimapa rectangular por defecto de GTA los arcos quedan por encima del
-mapa, así que en ese caso usá el diseño **Barras**
-(*Ajustes → Estado → Diseño*, o `Config.Defaults.statusLayout = 'bars'`).
+| Estilo | Cómo se ve |
+|---|---|
+| `ring` | Arcos segmentados abrazando el minimapa + insignias circulares arriba |
+| `bars` | Barras verticales segmentadas dentro de un panel |
+| `circles` | Anillos de progreso con el icono dentro y el valor debajo |
+| `squares` | Casillas redondeadas que se llenan de abajo arriba |
+| `minimal` | Líneas finas con un icono al lado, sin panel |
+| `stacked` | Lista con icono, nombre, barra y porcentaje |
+| `hexagon` | Panal de hexágonos que se llenan de abajo arriba |
+| `corner` | Abanico de arcos desde la esquina superior izquierda |
+
+Y los cuatro velocímetros: `circle` (circular con anillo de RPM), `needle` (dial analógico
+con aguja y línea roja), `bar` (panel horizontal con tira de RPM) y `minimal` (pastilla
+compacta con línea de gasolina).
+
+Todo se cambia en caliente desde *Ajustes*, o por defecto en
+`Config.Defaults.statusStyle` y `Config.Defaults.speedoStyle`.
+
+**Anillos** está pensado para un **minimapa circular**: los arcos abrazan el círculo. Con
+el minimapa rectangular por defecto de GTA los arcos quedan por encima del mapa, así que
+en ese caso usá cualquiera de los otros siete, que se colocan encima del minimapa.
 
 Para poner el minimapa redondo mirá [`stream/README.md`](stream/README.md).
 
@@ -81,6 +102,8 @@ vivo y se guardan por jugador.
 | `/hud` · `F7` | Abre o cierra el menú de ajustes |
 | `/hudtoggle` | Enciende o apaga todo el HUD |
 | `/cinematic` | Barras de cine + minimapa oculto |
+| `/hudeditor` | Modo mover elementos (también desde *Ajustes → General*) |
+| `/vehiclemenu` · `F6` | Menú cenital del vehículo |
 | `B` | Cinturón |
 | `Re Pág` | Control de crucero |
 
@@ -154,6 +177,16 @@ local belt   = exports['nexytt_hud']:IsSeatbeltOn()
 local brujula= exports['nexytt_hud']:GetCompass()     -- heading, cardinal, street, zone
 ```
 
+### Menú del vehículo y editor
+
+```lua
+exports['nexytt_hud']:OpenVehicleMenu()
+exports['nexytt_hud']:IsVehicleMenuOpen()
+exports['nexytt_hud']:OpenEditor()
+
+local fps, ping = exports['nexytt_hud']:GetPerf()
+```
+
 ### Ocultar el HUD desde otro script
 
 ```lua
@@ -220,12 +253,16 @@ nexytt_hud/
 │   ├── utils.lua           helpers + cola de mensajes a la NUI
 │   ├── notify.lua          notificaciones y compatibilidad con el framework
 │   ├── settings.lua        ajustes del jugador (KVP) y callbacks NUI
+│   ├── editor.lua          modo arrastrar y soltar, y guardado de posiciones
 │   ├── minimap.lua         forma del minimapa, componentes nativos y brújula
 │   ├── status.lua          vida, chaleco, necesidades y efectos de estrés
 │   ├── seatbelt.lua        cinturón y eyección
 │   ├── vehicle.lua         velocímetro, combustible y crucero
+│   ├── vehmenu.lua         menú cenital: puertas, ventanillas, ruedas, seguro
 │   ├── voice.lua           pma-voice / mumble
 │   ├── money.lua           efectivo, banco y dinero negro
+│   ├── weapon.lua          arma equipada y munición
+│   ├── perf.lua            FPS y ping
 │   └── main.lua            panel de servidor, visibilidad y limpieza
 ├── server/main.lua         jugadores conectados y exports
 ├── stream/                 texturas opcionales del minimapa

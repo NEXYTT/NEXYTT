@@ -1,18 +1,51 @@
 /* =====================================================================
-   ESTADO DEL JUGADOR — anillos alrededor del minimapa + modo barras
+   ESTADO DEL JUGADOR — ocho estilos
    ===================================================================== */
 
 .status {
   position: absolute;
-  left:   calc(var(--map-left)   + var(--status-dx));
+  left:   calc(var(--map-left) + var(--status-dx));
   bottom: calc(var(--map-bottom) + var(--status-dy));
-  width:  var(--map-w);
-  height: var(--map-h);
   transform: scale(calc(var(--hud-scale) * var(--status-scale)));
   transform-origin: bottom left;
 }
 
-/* ---------- Anillos ---------- */
+/* Los anillos ocupan la caja del minimapa; el resto van encima de él */
+.status[data-style="ring"] { width: var(--map-w); height: var(--map-h); }
+
+.status:not([data-style="ring"]):not([data-style="corner"]) {
+  bottom: calc(var(--map-bottom) + var(--map-h) + 14px + var(--status-dy));
+}
+
+.status[data-style="corner"] {
+  left: calc(14px + var(--status-dx));
+  top: calc(12px + var(--status-dy));
+  bottom: auto;
+  transform-origin: top left;
+}
+
+/* ---------------------------------------------------------------------
+   Un único sitio donde vive el color de cada métrica
+   --------------------------------------------------------------------- */
+[data-metric="health"]  { --c: var(--m-health);  }
+[data-metric="armor"]   { --c: var(--m-armor);   }
+[data-metric="hunger"]  { --c: var(--m-hunger);  }
+[data-metric="thirst"]  { --c: var(--m-thirst);  }
+[data-metric="stress"]  { --c: var(--m-stress);  }
+[data-metric="oxygen"]  { --c: var(--m-oxygen);  }
+[data-metric="stamina"] { --c: var(--m-stamina); }
+[data-metric="fuel"]    { --c: var(--m-fuel);    }
+[data-metric="engine"]  { --c: var(--m-engine);  }
+
+[data-metric].is-warn   { --c: var(--warn);   }
+[data-metric].is-danger { --c: var(--danger); }
+[data-metric].is-danger .f,
+[data-metric].is-danger .sti__icon { animation: pulseSoft 1.1s ease-in-out infinite; }
+@keyframes pulseSoft { 50% { opacity: .42; } }
+
+/* =====================================================================
+   ESTILO 1 · ANILLOS
+   ===================================================================== */
 .status__ring-wrap {
   position: absolute;
   left: 50%;
@@ -21,31 +54,25 @@
   height: calc(var(--map-h) * 1.32);
   transform: translate(-50%, -50%);
 }
-
 .status__rings { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 
 .arc { fill: none; stroke-width: 14; stroke-linecap: butt; }
 .arc--bg   { stroke: rgba(255, 255, 255, .14); stroke-dasharray: 100 100; }
 .arc--fill {
+  stroke: var(--c);
+  color: var(--c);
   stroke-dasharray: 0 100;
   transition: stroke-dasharray .22s var(--ease), stroke .3s var(--ease);
   filter: drop-shadow(0 0 5px currentColor);
 }
-.arc--fill[data-metric="health"] { stroke: var(--m-health); color: var(--m-health); }
-.arc--fill[data-metric="armor"]  { stroke: var(--m-armor);  color: var(--m-armor);  }
 
-.arc--fill.is-warn   { stroke: var(--warn) !important;   color: var(--warn) !important; }
-.arc--fill.is-danger { stroke: var(--danger) !important; color: var(--danger) !important; animation: arcPulse 1.1s ease-in-out infinite; }
-@keyframes arcPulse { 50% { opacity: .42; } }
-
-/* ---------- Insignias de necesidades (arco superior) ---------- */
 .status__needs { position: absolute; inset: 0; overflow: visible; }
 
 .need {
   position: absolute;
   width: 34px;
   height: 34px;
-  margin: -17px 0 0 -17px;      /* centrado sobre su punto del arco */
+  margin: -17px 0 0 -17px;
   display: grid;
   place-items: center;
   border-radius: 50%;
@@ -54,25 +81,15 @@
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  transition: opacity .25s var(--ease), transform .25s var(--ease);
 }
-.need.is-out { opacity: 0; transform: scale(.7); pointer-events: none; }
-
-.need__ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.need__ring .t { fill: none; stroke: rgba(255, 255, 255, .12); stroke-width: 3; }
-.need__ring .f {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 0 100;
-  transition: stroke-dasharray .3s var(--ease), stroke .3s var(--ease);
+.need .sti__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
 }
-
-.need__icon { width: 15px; height: 15px; color: var(--text-dim); transition: color .25s var(--ease); }
-.need.is-warn   .need__icon { color: var(--warn); }
-.need.is-danger .need__icon { color: var(--danger); animation: needBlink 1s ease-in-out infinite; }
-@keyframes needBlink { 50% { opacity: .3; } }
-
+.need__icon { position: relative; width: 15px; height: 15px; color: var(--c); }
 .need__value {
   position: absolute;
   bottom: -14px;
@@ -81,22 +98,13 @@
   font-size: 10px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--warn);
+  color: var(--c);
   text-shadow: 0 1px 3px #000;
   opacity: 0;
   transition: opacity .2s var(--ease);
-  pointer-events: none;
 }
 .need.is-warn .need__value, .need.is-danger .need__value { opacity: 1; }
-.need.is-danger .need__value { color: var(--danger); }
 
-.need[data-metric="hunger"]  .f { stroke: var(--m-hunger); }
-.need[data-metric="thirst"]  .f { stroke: var(--m-thirst); }
-.need[data-metric="stress"]  .f { stroke: var(--m-stress); }
-.need[data-metric="oxygen"]  .f { stroke: var(--m-oxygen); }
-.need[data-metric="stamina"] .f { stroke: var(--m-stamina); }
-
-/* ---------- Numeros de vida / chaleco ---------- */
 .status__caps {
   position: absolute;
   left: 50%;
@@ -123,29 +131,18 @@
   color: var(--text);
 }
 .cap svg { width: 12px; height: 12px; }
-.cap--health svg { color: var(--m-health); }
-.cap--armor  svg { color: var(--m-armor);  }
+.cap[data-cap="health"] svg { color: var(--m-health); }
+.cap[data-cap="armor"]  svg { color: var(--m-armor);  }
 .cap.is-warn   { color: var(--warn); }
 .cap.is-danger { color: var(--danger); }
 
-/* ---------- Voz ---------- */
-.status .voice {
-  position: absolute;
-  left: 50%;
-  bottom: calc(var(--map-h) + 78px);
-  transform: translateX(-50%);
-}
-
 /* =====================================================================
-   MODO BARRAS
+   PANEL COMÚN DE LOS ESTILOS 2 A 7
    ===================================================================== */
-.status__bars {
-  position: absolute;
-  left: 0;
-  bottom: calc(var(--map-h) + 14px);
+.stpanel {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 9px;
   padding: 10px 12px;
   border-radius: var(--r-lg);
   background: var(--surface);
@@ -155,14 +152,13 @@
   -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
 
-.status--ring .status__bars { display: none; }
-.status--bars .status__ring-wrap,
-.status--bars .status__caps { display: none; }
-.status--bars .voice { bottom: calc(var(--map-h) + 136px); }
+.sti__icon { width: 14px; height: 14px; color: var(--c); }
+.sti .v { font-variant-numeric: tabular-nums; }
 
-.sbar { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-
-.sbar__track {
+/* ---------- 2 · BARRAS ---------- */
+.sti--bar { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sti--bar .v { font-size: 10px; font-weight: 800; color: var(--text-dim); line-height: 1; }
+.sti--bar .t {
   position: relative;
   width: 9px;
   height: 56px;
@@ -172,32 +168,182 @@
   -webkit-mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
           mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
 }
-.sbar__fill {
+.sti--bar .f {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 0%;
+  inset: auto 0 0 0;
+  height: var(--v, 0%);
+  background: var(--c);
   transition: height .25s var(--ease), background .3s var(--ease);
 }
 
-.sbar__icon { width: 14px; height: 14px; color: var(--text-dim); }
-.sbar__value {
+/* ---------- 3 · CÍRCULOS ---------- */
+.stpanel--circles { align-items: flex-start; padding-bottom: 8px; }
+.sti--circle { position: relative; width: 46px; height: 60px; }
+.sti--circle .sti__ring { position: absolute; top: 0; left: 0; width: 46px; height: 46px; transform: rotate(-90deg); }
+.sti__ring .t { fill: none; stroke: rgba(255, 255, 255, .13); stroke-width: 3; }
+.sti__ring .f {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray .3s var(--ease), stroke .3s var(--ease);
+}
+.sti--circle .sti__icon { position: absolute; top: 15px; left: 15px; width: 16px; height: 16px; }
+.sti--circle .v {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  width: 46px;
+  text-align: center;
   font-size: 10px;
   font-weight: 800;
-  font-variant-numeric: tabular-nums;
   color: var(--text-dim);
-  line-height: 1;
 }
 
-.sbar[data-metric="health"]  .sbar__fill { background: var(--m-health);  }
-.sbar[data-metric="armor"]   .sbar__fill { background: var(--m-armor);   }
-.sbar[data-metric="hunger"]  .sbar__fill { background: var(--m-hunger);  }
-.sbar[data-metric="thirst"]  .sbar__fill { background: var(--m-thirst);  }
-.sbar[data-metric="stress"]  .sbar__fill { background: var(--m-stress);  }
-.sbar[data-metric="oxygen"]  .sbar__fill { background: var(--m-oxygen);  }
-.sbar[data-metric="stamina"] .sbar__fill { background: var(--m-stamina); }
+/* ---------- 4 · CASILLAS ---------- */
+.sti--square {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+}
+.sti--square .f {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--v, 0%);
+  background: color-mix(in srgb, var(--c) 52%, transparent);
+  transition: height .25s var(--ease);
+}
+.sti--square .sti__icon { position: relative; width: 17px; height: 17px; color: var(--text); }
+.sti--square .v {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text);
+  opacity: .75;
+}
 
-.sbar.is-warn   .sbar__fill { background: var(--warn) !important; }
-.sbar.is-danger .sbar__fill { background: var(--danger) !important; animation: arcPulse 1.1s ease-in-out infinite; }
-.sbar.is-out { display: none; }
+/* ---------- 5 · MÍNIMO ---------- */
+.stpanel--minimal {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+  gap: 12px;
+  align-items: center;
+}
+.sti--minimal { display: flex; align-items: center; gap: 6px; }
+.sti--minimal .sti__icon { width: 13px; height: 13px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.9)); }
+.sti--minimal .t {
+  width: 38px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .24);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .7);
+  overflow: hidden;
+}
+.sti--minimal .f {
+  display: block;
+  height: 100%;
+  width: var(--v, 0%);
+  background: var(--c);
+  transition: width .25s var(--ease);
+}
+
+/* ---------- 6 · LISTA ---------- */
+.stpanel--stacked { flex-direction: column; align-items: stretch; gap: 6px; min-width: 208px; }
+.sti--stacked {
+  display: grid;
+  grid-template-columns: 15px 58px 1fr 30px;
+  align-items: center;
+  gap: 9px;
+}
+.sti--stacked .n {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sti--stacked .t { height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.sti--stacked .f {
+  display: block;
+  height: 100%;
+  width: var(--v, 0%);
+  background: var(--c);
+  transition: width .25s var(--ease);
+}
+.sti--stacked .v { font-size: 11px; font-weight: 700; color: var(--text); text-align: right; }
+
+/* ---------- 7 · HEXÁGONOS ---------- */
+.stpanel--hexagon {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0 0 13px;
+  gap: 3px;
+  align-items: flex-start;
+}
+.sti--hex { position: relative; width: 42px; height: 47px; display: grid; place-items: center; }
+.stpanel--hexagon .sti--hex:nth-child(even) { transform: translateY(12px); }
+.sti--hex .hex {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: rgba(16, 20, 28, .72);
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+}
+.sti--hex .f {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--v, 0%);
+  background: color-mix(in srgb, var(--c) 60%, transparent);
+  transition: height .25s var(--ease);
+}
+.sti--hex .sti__icon { position: relative; width: 16px; height: 16px; color: var(--text); }
+.sti--hex .v {
+  position: absolute;
+  bottom: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text);
+  opacity: .78;
+}
+
+/* =====================================================================
+   ESTILO 8 · ESQUINA
+   ===================================================================== */
+.corner { position: relative; }
+.corner__svg { position: absolute; inset: 0; overflow: visible; }
+.corner .arc { stroke-width: 9; }
+.corner .arc--bg { stroke: rgba(255, 255, 255, .13); }
+.corner .arc--fill { filter: drop-shadow(0 0 4px var(--c)); }
+
+.corner__icon {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  margin: -9.5px 0 0 -9.5px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.corner__icon svg { width: 11px; height: 11px; color: var(--c); }

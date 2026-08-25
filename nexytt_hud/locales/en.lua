@@ -50,6 +50,31 @@ Locales['en'] = {
     ['cat_notify']   = 'Notifications',
     ['cat_about']    = 'About',
 
+
+    ['veh_menu']     = 'Vehicle',
+    ['veh_doors']    = 'Doors',
+    ['veh_windows']  = 'Windows',
+    ['veh_tyres']    = 'Tyres',
+    ['veh_lock']     = 'Lock',
+    ['veh_locked']   = 'Locked',
+    ['veh_unlocked'] = 'Unlocked',
+    ['veh_engine']   = 'Engine',
+    ['veh_body']     = 'Body',
+    ['veh_plate']    = 'Plate',
+    ['veh_no_keys']  = 'You are not in control of this vehicle',
+    ['veh_engine_on']  = 'Engine started',
+    ['veh_engine_off'] = 'Engine stopped',
+
+    ['editor_title'] = 'Move elements',
+    ['editor_help']  = 'Drag each block wherever you want it. Esc cancels.',
+    ['editor_saved'] = 'Positions saved',
+    ['editor_reset'] = 'Positions restored',
+
+    ['fps']  = 'FPS',
+    ['ping'] = 'Ping',
+
+    ['ammo'] = 'Ammo',
+
     ['notify_success'] = 'Success',
     ['notify_error']   = 'Error',
     ['notify_info']    = 'Information',

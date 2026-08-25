@@ -35,6 +35,8 @@ local function pushServerPanel()
                      and (Config.Server.timeSource == 'real' and realTime() or gameTime())
                      or nil,
         job        = Config.Server.showJob and Bridge.GetJobLabel() or nil,
+        fps        = (Config.Server.showFps  and HUD.settings.showFps)  and Perf.fps  or nil,
+        ping       = (Config.Server.showPing and HUD.settings.showPing) and Perf.ping or nil,
         framework  = Bridge.name,
     })
 end
@@ -100,7 +102,10 @@ CreateThread(function()
         if HUD.visible and not HUD.paused then
             pushServerPanel()
         end
-        Wait(Config.Tick.slow * 5)
+        -- Con FPS o ping en pantalla el panel tiene que ir al segundo;
+        -- si no, con refrescarlo cada pocos segundos sobra.
+        local live = HUD.settings.showFps or HUD.settings.showPing
+        Wait(live and Config.Tick.slow or Config.Tick.slow * 5)
     end
 end)
 

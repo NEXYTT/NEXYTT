@@ -168,6 +168,7 @@ end
 CreateThread(function()
     Wait(1200)
     fuelGetter = buildFuelGetter()
+    HUD.GetFuel = fuelGetter   -- lo reutiliza el menu cenital
 
     while true do
         local wait = 400

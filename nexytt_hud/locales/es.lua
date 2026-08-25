@@ -56,6 +56,35 @@ Locales['es'] = {
     ['cat_about']    = 'Acerca de',
 
     -- Notificaciones
+
+    -- Menu del vehiculo
+    ['veh_menu']     = 'Vehiculo',
+    ['veh_doors']    = 'Puertas',
+    ['veh_windows']  = 'Ventanillas',
+    ['veh_tyres']    = 'Ruedas',
+    ['veh_lock']     = 'Seguro',
+    ['veh_locked']   = 'Cerrado',
+    ['veh_unlocked'] = 'Abierto',
+    ['veh_engine']   = 'Motor',
+    ['veh_body']     = 'Carroceria',
+    ['veh_plate']    = 'Matricula',
+    ['veh_no_keys']  = 'No tienes el control de este vehiculo',
+    ['veh_engine_on']  = 'Motor encendido',
+    ['veh_engine_off'] = 'Motor apagado',
+
+    -- Editor
+    ['editor_title'] = 'Mover elementos',
+    ['editor_help']  = 'Arrastra cada bloque donde lo quieras. Esc cancela.',
+    ['editor_saved'] = 'Posiciones guardadas',
+    ['editor_reset'] = 'Posiciones restablecidas',
+
+    -- Rendimiento
+    ['fps']  = 'FPS',
+    ['ping'] = 'Ping',
+
+    -- Armas
+    ['ammo'] = 'Municion',
+
     ['notify_success'] = 'Correcto',
     ['notify_error']   = 'Error',
     ['notify_info']    = 'Informacion',

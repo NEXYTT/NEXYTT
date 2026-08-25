@@ -13,14 +13,17 @@ const App = (() => {
     const s = NX.settings;
 
     NX.applyTokens(s);
-    Status.applyLayout();
+    Status.applyStyle();
+    VehicleHud.applyStyle();
+    Editor.applyPositions(s.positions || {});
 
     hud.classList.toggle('is-hidden', !hudVisible || s.hudEnabled === false);
 
-    $('.rail').classList.toggle('is-hidden', s.showServerPanel === false && s.showMoney === false);
+    $('#rail').classList.toggle('is-hidden', s.showServerPanel === false && s.showMoney === false);
     if (s.showCompass === false) Compass.hide();
     if (s.showVehicleHud === false) VehicleHud.hide();
     if (s.showVoice === false) $('#voice').classList.add('is-hidden');
+    if (s.showWeapon === false) $('#weapon').classList.add('is-hidden');
 
     $('#cinematic').classList.toggle('is-active', !!s.cinematicBars);
 
@@ -59,6 +62,16 @@ const App = (() => {
       $('#cinematic').classList.toggle('is-active', !!d.active);
     },
 
+    weapon(d)   { Panels.updateWeapon(d); },
+    vehmenu(d)  { VehMenu.update(d); },
+
+    vehmenuOpen(d) { VehMenu.setOpen(!!d.open); },
+
+    editor(d) {
+      if (d.open) Editor.start(d.positions || NX.settings.positions || {});
+      else Editor.stop();
+    },
+
     openSettings(d)  { Settings.open(d.settings); },
     closeSettings()  { Settings.close(true); },
   };
@@ -79,6 +92,8 @@ const App = (() => {
     Compass.init();
     Panels.init();
     Settings.init();
+    VehMenu.init();
+    Editor.init();
 
     window.addEventListener('message', onMessage);
     window.addEventListener('resize', () => { Compass.init(); Panels.measureRail(); });
@@ -113,16 +128,35 @@ const Demo = (() => {
   function seedSettings() {
     Object.assign(NX.settings, {
       hudEnabled: true, accent: '#5B8CFF', scale: 100, opacity: 100, theme: 'dark',
-      statusLayout: 'ring', statusOffsetX: 0, statusOffsetY: 0, statusScale: 100,
+      statusStyle: 'ring', statusOffsetX: 0, statusOffsetY: 0, statusScale: 100,
       showHealth: true, showArmor: true, showHunger: true, showThirst: true,
       showStress: true, showOxygen: true, showStamina: true, hideWhenFull: false,
-      showVehicleHud: true, units: 'kmh', showRpm: true, showFuel: true, showEngine: true, showBelt: true,
+      showVehicleHud: true, speedoStyle: 'circle', units: 'kmh',
+      showRpm: true, showFuel: true, showEngine: true, showBelt: true,
       showCompass: true, showStreet: true,
       showServerPanel: true, showMoney: true, showVoice: true, showPlayers: true,
+      showWeapon: true, showFps: true, showPing: true,
       notifySound: false, stressEffects: true, cinematicBars: false,
+      positions: {},
     });
     NX.state.framework = 'demo';
-    App.handlers.settings({ settings: NX.settings, config: { locale: 'es', currency: '$', serverName: 'NEXYTT RP', notify: { position: 'top-right', maxStack: 5 } } });
+    App.handlers.settings({
+      settings: NX.settings,
+      config: {
+        locale: 'es', currency: '$', serverName: 'NEXYTT RP',
+        notify: { position: 'top-right', maxStack: 5 },
+        labels: {
+          health: 'Vida', armor: 'Chaleco', hunger: 'Hambre', thirst: 'Sed',
+          stress: 'Estrés', oxygen: 'Oxígeno', stamina: 'Energía',
+          fuel: 'Gasolina', veh_engine: 'Motor', veh_body: 'Carrocería',
+          veh_lock: 'Seguro', veh_locked: 'Cerrado', veh_unlocked: 'Abierto',
+          editor_title: 'Mover elementos',
+          editor_help: 'Arrastra cada bloque donde lo quieras. Esc cancela.',
+          notify_success: 'Correcto', notify_error: 'Error',
+          notify_warning: 'Aviso', notify_info: 'Información',
+        },
+      },
+    });
   }
 
   function tick() {
@@ -169,6 +203,13 @@ const Demo = (() => {
       App.handlers.vehicle({ visible: false });
     }
 
+    /* Arma */
+    const clip = 17 - Math.floor((S.t * 0.9) % 18);
+    App.handlers.weapon({
+      visible: true, label: 'Pistola', clip, reserve: 68,
+      melee: false, low: clip <= 5, empty: false,
+    });
+
     /* Voz */
     App.handlers.voice({
       visible: true, range: 2, label: 'Normal',
@@ -182,6 +223,8 @@ const Demo = (() => {
       players: 48 + Math.floor(Math.sin(S.t / 20) * 6), maxPlayers: 64,
       id: 12, time: new Date().toTimeString().slice(0, 5),
       job: 'Policía · Sargento', framework: 'demo',
+      fps: 58 + Math.round(Math.sin(S.t / 4) * 5),
+      ping: 32 + Math.round(Math.sin(S.t / 9) * 12),
     });
 
     App.handlers.money({
@@ -203,12 +246,17 @@ const Demo = (() => {
         changes: { cash: delta },
       });
     } else if (roll < 0.55) {
-      S.inVehicle = !S.inVehicle;
-      if (S.inVehicle) { S.speed = 0; S.belt = false; }
-      App.handlers.notify({
-        text: S.inVehicle ? 'Has entrado en un Sultan RS.' : 'Has salido del vehículo.',
-        kind: 'info', duration: 4000,
-      });
+      // Entra siempre que esté a pie y solo sale de vez en cuando: así se
+      // pueden comparar los velocímetros sin esperar.
+      const next = S.inVehicle ? Math.random() < 0.25 : true;
+      if (next !== S.inVehicle) {
+        S.inVehicle = next;
+        if (next) { S.speed = 0; S.belt = false; }
+        App.handlers.notify({
+          text: next ? 'Has entrado en un Sultan RS.' : 'Has salido del vehículo.',
+          kind: 'info', duration: 4000,
+        });
+      }
     } else if (roll < 0.75 && S.inVehicle) {
       S.belt = !S.belt;
       App.handlers.notify({

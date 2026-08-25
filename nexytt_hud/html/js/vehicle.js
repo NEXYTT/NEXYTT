@@ -1,110 +1,268 @@
 /* =====================================================================
-   HUD DE VEHICULO
+   HUD DE VEHICULO — cuatro velocimetros
+   circle · needle · bar · minimal
    ===================================================================== */
 
 const VehicleHud = (() => {
   const CX = 110, CY = 110;
-  const R_SPEED = 90, R_RPM = 70;
-  const FROM = 135, TO = 405;      // 270 grados de barrido, clasico de velocimetro
+  const R_SPEED = 90, R_RPM = 70, R_TICK = 92;
+  const FROM = 135, TO = 405;               // 270 grados de barrido
 
   const root = $('#vehicle');
+  let refs = {};
+  let signature = '';
 
-  const el = {
-    speed:  $('#veh-speed'),
-    units:  $('#veh-units'),
-    gear:   $('#veh-gear'),
-    left:   $('#veh-left'),
-    right:  $('#veh-right'),
-    speedFill: $('#arc-speed-fill'),
-    rpmFill:   $('#arc-rpm-fill'),
-    fuel:   $('#vbar-fuel'),
-    engine: $('#vbar-engine'),
-    side:   $('.vehicle__side'),
-    belt:   $('#pill-belt'),
-    lights: $('#pill-lights'),
-    cruise: $('#pill-cruise'),
+  /* ------------------------------------------------------------------
+     Piezas compartidas
+     ------------------------------------------------------------------ */
+  const pill = (name, icon) => `<span class="pill" data-pill="${name}">${NX.icon(icon)}</span>`;
+
+  const pills = (d) => `
+    <div class="vpills">
+      ${d.showBelt !== false ? pill('belt', 'belt') : ''}
+      ${pill('lights', 'light')}
+      ${pill('cruise', 'cruise')}
+    </div>`;
+
+  const meter = (key, icon, vertical) => `
+    <div class="vmeter${vertical ? '' : ' vmeter--h'}" data-metric="${key}">
+      <div class="vmeter__track"><i class="f"></i></div>
+      ${NX.icon(icon, 'vmeter__icon')}
+    </div>`;
+
+  const meters = (d, vertical) => {
+    const parts = [];
+    if (d.showFuel !== false)   parts.push(meter('fuel', 'fuel', vertical));
+    if (d.showEngine !== false) parts.push(meter('engine', 'engine', vertical));
+    if (!parts.length) return '';
+    return `<div class="vmeters${vertical ? '' : ' vmeters--h'}">${parts.join('')}</div>`;
   };
 
-  let beltState = false;
+  const blinkers = () => `
+    <div class="blink blink--left">${NX.icon('left')}</div>
+    <div class="blink blink--right">${NX.icon('right')}</div>`;
 
-  function buildArcs() {
-    const speedPath = NX.arcPath(CX, CY, R_SPEED, FROM, TO);
-    const rpmPath   = NX.arcPath(CX, CY, R_RPM,   FROM, TO);
+  const segMask = (id, d, width) => `
+    <mask id="${id}">
+      <path d="${d}" fill="none" stroke="#fff" stroke-width="${width}"
+            stroke-linecap="butt" stroke-dasharray="1.1 0.7" pathLength="100"/>
+    </mask>`;
 
-    ['#arc-speed-bg', '#arc-speed-fill', '#mask-gauge'].forEach(sel => {
-      const n = $(sel); if (n) n.setAttribute('d', speedPath);
+  /* ------------------------------------------------------------------
+     Estilos
+     ------------------------------------------------------------------ */
+  const builders = {
+
+    circle(d) {
+      const speedPath = NX.arcPath(CX, CY, R_SPEED, FROM, TO);
+      const rpmPath   = NX.arcPath(CX, CY, R_RPM,   FROM, TO);
+      const showRpm   = d.showRpm !== false;
+
+      return `
+        ${meters(d, true)}
+        <div class="gauge gauge--circle">
+          <svg class="gauge__svg" viewBox="0 0 220 220">
+            <defs>
+              ${segMask('mk-speed', speedPath, 15)}
+              ${showRpm ? segMask('mk-rpm', rpmPath, 6) : ''}
+            </defs>
+            <g mask="url(#mk-speed)">
+              <path class="arc arc--bg" d="${speedPath}" pathLength="100" stroke-width="15"/>
+              <path class="arc arc--speed sp-speed" d="${speedPath}" pathLength="100"/>
+            </g>
+            ${showRpm ? `
+            <g mask="url(#mk-rpm)">
+              <path class="arc arc--bg" d="${rpmPath}" pathLength="100" stroke-width="6"/>
+              <path class="arc arc--rpm sp-rpm" d="${rpmPath}" pathLength="100"/>
+            </g>` : ''}
+          </svg>
+          <div class="gauge__center">
+            <span class="gauge__speed sp-value">0</span>
+            <span class="gauge__units sp-units">km/h</span>
+          </div>
+          <div class="gauge__gear sp-gear">N</div>
+          ${blinkers()}
+        </div>
+        ${pills(d)}`;
+    },
+
+    needle(d) {
+      const max = d.maxSpeed || 300;
+      const showRpm = d.showRpm !== false;
+      const rpmPath = NX.arcPath(CX, CY, R_RPM + 26, FROM, TO);
+
+      let ticks = '';
+      for (let i = 0; i <= 30; i++) {
+        const angle = FROM + (i / 30) * 270;
+        const major = i % 5 === 0;
+        const a = NX.polar(CX, CY, R_TICK, angle);
+        const b = NX.polar(CX, CY, R_TICK - (major ? 15 : 8), angle);
+        ticks += `<line class="tick${major ? ' tick--major' : ''}"
+                        x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}"
+                        x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}"/>`;
+        if (major && i !== 0 && i !== 30) {
+          const t = NX.polar(CX, CY, R_TICK - 30, angle);
+          ticks += `<text class="tnum" x="${t.x.toFixed(1)}" y="${t.y.toFixed(1)}"
+                          text-anchor="middle" dominant-baseline="central">${Math.round(max * i / 30)}</text>`;
+        }
+      }
+
+      const redline = NX.arcPath(CX, CY, R_TICK + 6, FROM + 270 * 0.82, TO);
+
+      return `
+        ${meters(d, true)}
+        <div class="gauge gauge--needle">
+          <svg class="gauge__svg" viewBox="0 0 220 220">
+            <circle class="dial" cx="${CX}" cy="${CY}" r="${R_TICK + 10}"/>
+            <path class="redline" d="${redline}"/>
+            ${ticks}
+            ${showRpm ? `<path class="arc arc--rpm sp-rpm" d="${rpmPath}" pathLength="100" stroke-width="4"/>` : ''}
+          </svg>
+          <div class="needle sp-needle"><i></i></div>
+          <div class="needle__cap"></div>
+          <div class="gauge__digital">
+            <span class="sp-value">0</span><span class="sp-units">km/h</span>
+          </div>
+          <div class="gauge__gear sp-gear">N</div>
+          ${blinkers()}
+        </div>
+        ${pills(d)}`;
+    },
+
+    bar(d) {
+      const showRpm = d.showRpm !== false;
+      return `
+        <div class="vbarhud">
+          <div class="vbarhud__read">
+            <span class="sp-value">0</span>
+            <span class="vbarhud__unit sp-units">km/h</span>
+            <span class="vbarhud__gear sp-gear">N</span>
+          </div>
+          ${showRpm ? '<div class="vbarhud__rpm"><i class="sp-rpm-lin"></i></div>' : ''}
+          <div class="vbarhud__foot">
+            ${meters(d, false)}
+            ${pills(d)}
+          </div>
+          ${blinkers()}
+        </div>`;
+    },
+
+    minimal(d) {
+      return `
+        <div class="vmini">
+          <span class="sp-value">0</span>
+          <span class="vmini__unit sp-units">km/h</span>
+          <span class="vmini__gear sp-gear">N</span>
+          ${d.showBelt !== false ? pill('belt', 'belt') : ''}
+          ${d.showFuel !== false ? '<div class="vmini__fuel" data-metric="fuel"><i class="f"></i></div>' : ''}
+        </div>`;
+    },
+  };
+
+  /* ------------------------------------------------------------------
+     Reconstrucción
+     ------------------------------------------------------------------ */
+  function rebuild(style, d) {
+    root.dataset.style = style;
+    root.innerHTML = (builders[style] || builders.circle)(d);
+
+    refs = {
+      value:  $('.sp-value', root),
+      units:  $('.sp-units', root),
+      gear:   $('.sp-gear', root),
+      speed:  $('.sp-speed', root),
+      rpm:    $('.sp-rpm', root),
+      rpmLin: $('.sp-rpm-lin', root),
+      needle: $('.sp-needle', root),
+      left:   $('.blink--left', root),
+      right:  $('.blink--right', root),
+      meters: {},
+      pills:  {},
+    };
+
+    $$('[data-metric]', root).forEach(n => {
+      refs.meters[n.dataset.metric] = { node: n, fill: $('.f', n) };
     });
-    ['#arc-rpm-bg', '#arc-rpm-fill', '#mask-rpm'].forEach(sel => {
-      const n = $(sel); if (n) n.setAttribute('d', rpmPath);
-    });
+    $$('[data-pill]', root).forEach(n => { refs.pills[n.dataset.pill] = n; });
   }
 
-  function setBar(barEl, value, warnAt, dangerAt) {
-    const fill = $('.vbar__fill', barEl);
-    fill.style.height = `${NX.clamp(value, 0, 100)}%`;
-    NX.applyLevel(barEl, NX.level(value, warnAt, dangerAt));
-  }
-
-  /* ---------------------------------------------------------------- */
+  /* ------------------------------------------------------------------
+     Actualización
+     ------------------------------------------------------------------ */
   function update(data) {
-    if (data.visible === false) {
-      root.classList.add('is-hidden');
-      return;
-    }
+    if (data.visible === false) { root.classList.add('is-hidden'); return; }
     root.classList.remove('is-hidden');
 
-    /* Velocidad y revoluciones */
-    el.speed.textContent = data.speed ?? 0;
-    el.units.textContent = data.units || 'km/h';
-    NX.setArc(el.speedFill, data.speedPct ?? 0);
+    const style = NX.settings.speedoStyle || 'circle';
+    const sig = [style, data.showRpm, data.showFuel, data.showEngine, data.showBelt, data.maxSpeed].join('|');
+    if (sig !== signature) {
+      signature = sig;
+      rebuild(style, data);
+    }
 
-    const showRpm = data.showRpm !== false;
-    NX.setArc(el.rpmFill, showRpm ? (data.rpm ?? 0) : 0);
-    el.rpmFill.classList.toggle('is-redline', showRpm && (data.rpm ?? 0) >= 88);
+    const speedPct = NX.clamp(data.speedPct ?? 0, 0, 100);
+    const rpm = NX.clamp(data.rpm ?? 0, 0, 100);
 
-    /* Marcha */
-    el.gear.textContent = data.gear ?? 'N';
-    el.gear.classList.toggle('is-reverse', data.gear === 'R');
+    if (refs.value) refs.value.textContent = data.speed ?? 0;
+    if (refs.units) refs.units.textContent = data.units || 'km/h';
 
-    /* Gasolina y motor */
-    const showFuel = data.showFuel !== false;
-    const showEngine = data.showEngine !== false;
-    el.fuel.classList.toggle('is-hidden', !showFuel);
-    el.engine.classList.toggle('is-hidden', !showEngine);
-    el.side.classList.toggle('is-hidden', !showFuel && !showEngine);
+    if (refs.speed) NX.setArc(refs.speed, speedPct);
+    if (refs.rpm)   NX.setArc(refs.rpm, rpm);
+    if (refs.rpmLin) refs.rpmLin.style.width = `${rpm}%`;
+    if (refs.needle) refs.needle.style.transform = `rotate(${135 + speedPct * 2.7}deg)`;
 
-    if (showFuel)   setBar(el.fuel,   data.fuel ?? 0,   22, 10);
-    if (showEngine) setBar(el.engine, data.engine ?? 0, 45, 25);
+    const redline = rpm >= 88;
+    if (refs.rpm)    refs.rpm.classList.toggle('is-redline', redline);
+    if (refs.rpmLin) refs.rpmLin.classList.toggle('is-redline', redline);
 
-    /* Pastillas */
-    const showBelt = data.showBelt !== false;
-    el.belt.classList.toggle('is-hidden', !showBelt);
-    beltState = !!data.seatbelt;
-    el.belt.classList.toggle('is-on', beltState);
-    el.belt.classList.toggle('is-alert', !beltState && (data.speed ?? 0) > 30);
+    if (refs.gear) {
+      refs.gear.textContent = data.gear ?? 'N';
+      refs.gear.classList.toggle('is-reverse', data.gear === 'R');
+    }
 
-    el.lights.classList.toggle('is-on', !!data.lights);
-    el.lights.classList.toggle('is-high', !!data.highBeams);
-    el.cruise.classList.toggle('is-on', !!data.cruise);
+    const fuel = refs.meters.fuel;
+    if (fuel) {
+      const v = NX.clamp(data.fuel ?? 0, 0, 100);
+      fuel.node.style.setProperty('--v', `${v}%`);
+      if (fuel.fill) fuel.fill.style.setProperty('--v', `${v}%`);
+      NX.applyLevel(fuel.node, NX.level(v, 22, 10));
+    }
 
-    /* Intermitentes: 1 derecha, 2 izquierda, 3 ambos */
+    const engine = refs.meters.engine;
+    if (engine) {
+      const v = NX.clamp(data.engine ?? 0, 0, 100);
+      engine.node.style.setProperty('--v', `${v}%`);
+      NX.applyLevel(engine.node, NX.level(v, 45, 25));
+    }
+
+    const belt = refs.pills.belt;
+    if (belt) {
+      belt.classList.toggle('is-on', !!data.seatbelt);
+      belt.classList.toggle('is-alert', !data.seatbelt && (data.speed ?? 0) > 30);
+    }
+    const lights = refs.pills.lights;
+    if (lights) {
+      lights.classList.toggle('is-on', !!data.lights);
+      lights.classList.toggle('is-high', !!data.highBeams);
+    }
+    const cruise = refs.pills.cruise;
+    if (cruise) cruise.classList.toggle('is-on', !!data.cruise);
+
     const ind = data.indicators ?? 0;
-    el.left.classList.toggle('is-on',  ind === 2 || ind === 3);
-    el.right.classList.toggle('is-on', ind === 1 || ind === 3);
+    if (refs.left)  refs.left.classList.toggle('is-on',  ind === 2 || ind === 3);
+    if (refs.right) refs.right.classList.toggle('is-on', ind === 1 || ind === 3);
   }
 
   function setSeatbelt(on) {
-    beltState = !!on;
-    el.belt.classList.toggle('is-on', beltState);
+    if (refs.pills && refs.pills.belt) refs.pills.belt.classList.toggle('is-on', !!on);
   }
-
   function setCruise(active) {
-    el.cruise.classList.toggle('is-on', !!active);
+    if (refs.pills && refs.pills.cruise) refs.pills.cruise.classList.toggle('is-on', !!active);
   }
 
+  function applyStyle() { signature = ''; root.dataset.style = NX.settings.speedoStyle || 'circle'; }
   function hide() { root.classList.add('is-hidden'); }
+  function init() { applyStyle(); }
 
-  function init() { buildArcs(); }
-
-  return { init, update, hide, setSeatbelt, setCruise };
+  return { init, update, hide, setSeatbelt, setCruise, applyStyle, STYLES: ['circle', 'needle', 'bar', 'minimal'] };
 })();

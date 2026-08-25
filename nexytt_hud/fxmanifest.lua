@@ -19,12 +19,16 @@ client_scripts {
     'client/utils.lua',
     'client/notify.lua',
     'client/settings.lua',
+    'client/editor.lua',
     'client/minimap.lua',
     'client/status.lua',
     'client/seatbelt.lua',
     'client/vehicle.lua',
+    'client/vehmenu.lua',
     'client/voice.lua',
     'client/money.lua',
+    'client/weapon.lua',
+    'client/perf.lua',
     'client/main.lua'
 }
 

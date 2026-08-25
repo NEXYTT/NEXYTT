@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="css/status.css">
 <link rel="stylesheet" href="css/vehicle.css">
 <link rel="stylesheet" href="css/notify.css">
+<link rel="stylesheet" href="css/extras.css">
 <link rel="stylesheet" href="css/settings.css">
 </head>
 <body>
@@ -48,6 +49,19 @@
     <symbol id="ic-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
     <symbol id="ic-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
     <symbol id="ic-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M9.5 17h5"/></symbol>
+    <symbol id="ic-door" viewBox="0 0 24 24"><path d="M4 3h11a1 1 0 0 1 1 1v17H4z"/><path d="M16 21h4V8l-4-4"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="ic-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 11h18"/></symbol>
+    <symbol id="ic-tyre" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 3v5.6M12 15.4V21M3 12h5.6M15.4 12H21"/></symbol>
+    <symbol id="ic-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="ic-unlock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 7.5-2"/></symbol>
+    <symbol id="ic-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/></symbol>
+    <symbol id="ic-move" viewBox="0 0 24 24"><path d="M5 9L2 12l3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></symbol>
+    <symbol id="ic-weapon" viewBox="0 0 24 24"><path d="M3 8h13l2 4h3v3h-4l-2 3h-4l-1-3H6a3 3 0 0 1-3-3z"/><path d="M8 15v3"/></symbol>
+    <symbol id="ic-fps" viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 4-7 5 5"/></symbol>
+    <symbol id="ic-ping" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5.5 5.5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/></symbol>
+    <symbol id="ic-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+    <symbol id="ic-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.1-6.4L3 9"/></symbol>
+    <symbol id="ic-plate" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10v4M10 10v4M14 10v4M18 10v4"/></symbol>
     <symbol id="ic-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></symbol>
   </defs>
 </svg>
@@ -56,7 +70,7 @@
 <div id="hud" class="hud is-hidden">
 
   <!-- Brujula -->
-  <section id="compass" class="compass is-hidden">
+  <section id="compass" class="compass is-hidden" data-module="compass">
     <div class="compass__bar">
       <div class="compass__viewport"><div class="compass__track" id="compass-track"></div></div>
       <div class="compass__needle"></div>
@@ -70,7 +84,7 @@
   </section>
 
   <!-- Columna derecha: servidor + dinero -->
-  <aside class="rail">
+  <aside class="rail" id="rail" data-module="rail">
     <section id="server" class="panel server is-hidden">
       <header class="server__head">
         <span class="server__logo" id="server-logo">N</span>
@@ -99,111 +113,67 @@
   </aside>
 
   <!-- Notificaciones -->
-  <section id="notifications" class="notifications notifications--top-right"></section>
+  <section id="notifications" class="notifications notifications--top-right" data-module="notifications"></section>
 
-  <!-- Estado del jugador -->
-  <section id="status" class="status status--ring">
+  <!-- Estado del jugador (el marcado depende del estilo elegido) -->
+  <section id="status" class="status" data-style="ring" data-module="status"></section>
 
-    <div class="status__ring-wrap">
-      <svg class="status__rings" viewBox="0 0 240 240" id="status-rings">
-        <defs>
-          <mask id="seg-mask-health">
-            <path id="mask-health" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt"
-                  stroke-dasharray="1.35 0.75" pathLength="100"/>
-          </mask>
-          <mask id="seg-mask-armor">
-            <path id="mask-armor" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt"
-                  stroke-dasharray="1.35 0.75" pathLength="100"/>
-          </mask>
-        </defs>
+  <!-- Voz -->
+  <div id="voice" class="voice is-hidden" data-module="voice">
+    <div class="voice__mic"><svg><use href="#ic-mic"/></svg></div>
+    <div class="voice__levels"><i></i><i></i><i></i></div>
+    <span class="voice__label" id="voice-label">Normal</span>
+    <span class="voice__radio is-hidden" id="voice-radio"><svg><use href="#ic-radio"/></svg><b>0</b></span>
+  </div>
 
-        <g mask="url(#seg-mask-health)">
-          <path class="arc arc--bg"   id="arc-health-bg"   pathLength="100"/>
-          <path class="arc arc--fill" id="arc-health-fill" pathLength="100" data-metric="health"/>
-        </g>
-        <g mask="url(#seg-mask-armor)">
-          <path class="arc arc--bg"   id="arc-armor-bg"   pathLength="100"/>
-          <path class="arc arc--fill" id="arc-armor-fill" pathLength="100" data-metric="armor"/>
-        </g>
-      </svg>
+  <!-- Arma equipada -->
+  <div id="weapon" class="weapon is-hidden" data-module="weapon">
+    <svg class="weapon__icon"><use href="#ic-weapon"/></svg>
+    <span class="weapon__name" id="weapon-name"></span>
+    <span class="weapon__ammo"><b id="weapon-clip">0</b><i id="weapon-reserve">/0</i></span>
+  </div>
 
-      <div class="status__needs" id="status-needs"></div>
-
-    </div>
-
-    <div class="status__caps">
-      <span class="cap cap--health" id="cap-health">
-        <svg><use href="#ic-heart"/></svg><b>100</b>
-      </span>
-      <span class="cap cap--armor is-hidden" id="cap-armor">
-        <svg><use href="#ic-shield"/></svg><b>0</b>
-      </span>
-    </div>
-
-    <div class="status__bars" id="status-bars"></div>
-
-    <div id="voice" class="voice is-hidden">
-      <div class="voice__mic"><svg><use href="#ic-mic"/></svg></div>
-      <div class="voice__levels"><i></i><i></i><i></i></div>
-      <span class="voice__label" id="voice-label">Normal</span>
-      <span class="voice__radio is-hidden" id="voice-radio"><svg><use href="#ic-radio"/></svg><b>0</b></span>
-    </div>
-  </section>
-
-  <!-- Vehiculo -->
-  <section id="vehicle" class="vehicle is-hidden">
-    <div class="vehicle__side">
-      <div class="vbar" id="vbar-fuel" data-metric="fuel">
-        <div class="vbar__track"><div class="vbar__fill"></div></div>
-        <svg class="vbar__icon"><use href="#ic-fuel"/></svg>
-      </div>
-      <div class="vbar" id="vbar-engine" data-metric="engine">
-        <div class="vbar__track"><div class="vbar__fill"></div></div>
-        <svg class="vbar__icon"><use href="#ic-engine"/></svg>
-      </div>
-    </div>
-
-    <div class="gauge">
-      <svg class="gauge__svg" viewBox="0 0 220 220">
-        <defs>
-          <mask id="seg-mask-gauge">
-            <path id="mask-gauge" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="butt"
-                  stroke-dasharray="1.1 0.7" pathLength="100"/>
-          </mask>
-          <mask id="seg-mask-rpm">
-            <path id="mask-rpm" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="butt"
-                  stroke-dasharray="0.9 0.75" pathLength="100"/>
-          </mask>
-        </defs>
-
-        <g mask="url(#seg-mask-gauge)">
-          <path class="arc arc--bg"    id="arc-speed-bg"   pathLength="100"/>
-          <path class="arc arc--speed" id="arc-speed-fill" pathLength="100"/>
-        </g>
-        <g mask="url(#seg-mask-rpm)">
-          <path class="arc arc--bg"  id="arc-rpm-bg"   pathLength="100"/>
-          <path class="arc arc--rpm" id="arc-rpm-fill" pathLength="100"/>
-        </g>
-      </svg>
-
-      <div class="gauge__center">
-        <span class="gauge__speed" id="veh-speed">0</span>
-        <span class="gauge__units" id="veh-units">km/h</span>
-      </div>
-      <div class="gauge__gear" id="veh-gear">N</div>
-
-      <div class="gauge__blinker gauge__blinker--left"  id="veh-left"><svg><use href="#ic-left"/></svg></div>
-      <div class="gauge__blinker gauge__blinker--right" id="veh-right"><svg><use href="#ic-right"/></svg></div>
-    </div>
-
-    <div class="vehicle__pills">
-      <span class="pill" id="pill-belt"><svg><use href="#ic-belt"/></svg></span>
-      <span class="pill" id="pill-lights"><svg><use href="#ic-light"/></svg></span>
-      <span class="pill" id="pill-cruise"><svg><use href="#ic-cruise"/></svg></span>
-    </div>
-  </section>
+  <!-- Vehiculo (el marcado depende del velocimetro elegido) -->
+  <section id="vehicle" class="vehicle is-hidden" data-style="circle" data-module="vehicle"></section>
 
   <div class="cinematic" id="cinematic"><i></i><i></i></div>
+</div>
+
+<!-- ================= MENU CENITAL DEL VEHICULO ================= -->
+<div id="vehmenu" class="vehmenu is-hidden">
+  <div class="vehmenu__backdrop" data-vehclose></div>
+  <div class="vehmenu__panel" role="dialog" aria-modal="true" aria-label="Menu del vehiculo">
+    <header class="vehmenu__head">
+      <div>
+        <h2 id="vehmenu-name">Vehiculo</h2>
+        <p><svg><use href="#ic-plate"/></svg><span id="vehmenu-plate">—</span></p>
+      </div>
+      <button class="vehmenu__close" data-vehclose aria-label="Cerrar"><svg><use href="#ic-x"/></svg></button>
+    </header>
+
+    <div class="vehmenu__body">
+      <div class="vehmenu__diagram" id="vehmenu-diagram"></div>
+      <div class="vehmenu__side">
+        <div class="vehmenu__gauges" id="vehmenu-gauges"></div>
+        <div class="vehmenu__actions" id="vehmenu-actions"></div>
+        <p class="vehmenu__hint" id="vehmenu-hint"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= EDITOR DE POSICION ================= -->
+<div id="editor" class="editor is-hidden">
+  <div class="editor__grid"></div>
+  <div class="editor__bar">
+    <span class="editor__title"><svg><use href="#ic-move"/></svg><b id="editor-title">Mover elementos</b></span>
+    <span class="editor__help" id="editor-help"></span>
+    <span class="editor__actions">
+      <button class="btn btn--ghost" id="editor-reset"><svg><use href="#ic-undo"/></svg>Restablecer</button>
+      <button class="btn btn--ghost" id="editor-cancel">Cancelar</button>
+      <button class="btn btn--primary" id="editor-save"><svg><use href="#ic-save"/></svg>Guardar</button>
+    </span>
+  </div>
 </div>
 
 <!-- ================= AJUSTES ================= -->
@@ -241,6 +211,8 @@
 
 <script src="js/utils.js"></script>
 <script src="js/status.js"></script>
+<script src="js/vehmenu.js"></script>
+<script src="js/editor.js"></script>
 <script src="js/vehicle.js"></script>
 <script src="js/compass.js"></script>
 <script src="js/panels.js"></script>
