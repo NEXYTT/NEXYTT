@@ -1,0 +1,464 @@
+/* =====================================================================
+   NEXYTT HUD — base, tokens y regiones
+   ===================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap');
+
+:root {
+  /* Marca */
+  --accent:        #5B8CFF;
+  --accent-soft:   rgba(91, 140, 255, .18);
+  --accent-glow:   rgba(91, 140, 255, .45);
+
+  /* Superficies */
+  --surface:       rgba(13, 16, 24, .58);
+  --surface-strong:rgba(10, 12, 18, .88);
+  --surface-solid: #0d1018;
+  --border:        rgba(255, 255, 255, .085);
+  --border-strong: rgba(255, 255, 255, .16);
+  --shadow:        0 12px 32px rgba(0, 0, 0, .45), 0 2px 6px rgba(0, 0, 0, .35);
+
+  /* Texto */
+  --text:          #e9edf5;
+  --text-dim:      rgba(233, 237, 245, .62);
+  --text-faint:    rgba(233, 237, 245, .34);
+
+  /* Semantica */
+  --ok:            #3ddc97;
+  --warn:          #ffb340;
+  --danger:        #ff5468;
+  --info:          #4aa8ff;
+
+  /* Metricas */
+  --m-health:      #3ddc97;
+  --m-armor:       #4aa8ff;
+  --m-hunger:      #ffb340;
+  --m-thirst:      #38c6ff;
+  --m-stress:      #c07bff;
+  --m-oxygen:      #5be0ff;
+  --m-stamina:     #ffe066;
+  --m-fuel:        #ffb340;
+  --m-engine:      #ff7a7a;
+
+  /* Ajustes del jugador */
+  --hud-scale:     1;
+  --hud-opacity:   1;
+
+  /* Anclaje del minimapa nativo en 1920x1080 (16:9).
+     Si tu minimapa esta movido, los sliders de Ajustes > Estado
+     corrigen la posicion sin tocar el CSS. */
+  --map-left:      1.15vw;
+  --map-bottom:    4.6vh;
+  --map-w:         15.6vw;   /* ancho del minimapa rectangular */
+  --map-h:         18.4vh;   /* alto  del minimapa = diametro del circular */
+  --status-dx:     0px;
+  --status-dy:     0px;
+  --status-scale:  1;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-full: 999px;
+
+  --ease: cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ---------- Temas ---------- */
+[data-theme="midnight"] {
+  --surface:        rgba(16, 20, 42, .62);
+  --surface-strong: rgba(12, 15, 34, .9);
+  --surface-solid:  #101428;
+  --text:           #e6eaff;
+}
+[data-theme="carbon"] {
+  --surface:        rgba(20, 20, 20, .62);
+  --surface-strong: rgba(14, 14, 14, .9);
+  --surface-solid:  #141414;
+  --border:         rgba(255, 255, 255, .1);
+}
+[data-theme="light"] {
+  --surface:        rgba(248, 249, 252, .72);
+  --surface-strong: rgba(255, 255, 255, .94);
+  --surface-solid:  #f7f8fb;
+  --border:         rgba(10, 15, 30, .1);
+  --border-strong:  rgba(10, 15, 30, .18);
+  --text:           #131722;
+  --text-dim:       rgba(19, 23, 34, .62);
+  --text-faint:     rgba(19, 23, 34, .34);
+  --shadow:         0 12px 32px rgba(20, 30, 60, .16);
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.is-filled { fill: currentColor; stroke: none; }
+
+.is-hidden { display: none !important; }
+.is-invisible { opacity: 0 !important; pointer-events: none; }
+
+/* ---------- Contenedor ---------- */
+.hud {
+  position: fixed;
+  inset: 0;
+  opacity: var(--hud-opacity);
+  transition: opacity .28s var(--ease);
+  pointer-events: none;
+}
+.hud.is-fading { opacity: 0 !important; }
+
+/* Panel de cristal reutilizable */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  position: relative;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+  pointer-events: none;
+}
+
+/* =====================================================================
+   BRUJULA
+   ===================================================================== */
+.compass {
+  position: absolute;
+  top: 2.2vh;
+  left: 50%;
+  transform: translateX(-50%) scale(var(--hud-scale));
+  transform-origin: top center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+.compass__bar {
+  position: relative;
+  width: 340px;
+  height: 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden;
+}
+
+.compass__viewport {
+  position: absolute;
+  inset: 0 46px 0 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+
+.compass__track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  will-change: transform;
+}
+
+.compass__tick {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+}
+.compass__tick i {
+  display: block;
+  width: 1px;
+  height: 6px;
+  background: var(--text-faint);
+}
+.compass__tick.is-major i { height: 9px; background: var(--text-dim); }
+.compass__tick span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--text-dim);
+  line-height: 1;
+  margin-top: 3px;
+}
+.compass__tick.is-cardinal span { color: var(--text); font-size: 12px; }
+
+.compass__needle {
+  position: absolute;
+  left: calc(50% - 23px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.compass__needle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--accent);
+}
+
+.compass__heading {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 46px;
+  display: grid;
+  place-items: center;
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  border-left: 1px solid var(--border);
+  background: rgba(0, 0, 0, .16);
+  font-variant-numeric: tabular-nums;
+}
+
+.compass__place {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .7);
+  max-width: 460px;
+}
+.compass__street { color: var(--text); }
+.compass__zone   { color: var(--text-dim); }
+.compass__sep    { color: var(--text-faint); }
+.compass__sep:empty, .compass__zone:empty, .compass__street:empty { display: none; }
+
+/* =====================================================================
+   COLUMNA DERECHA (servidor + dinero)
+   ===================================================================== */
+.rail {
+  position: absolute;
+  top: 2.2vh;
+  right: 1.4vw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  transform: scale(var(--hud-scale));
+  transform-origin: top right;
+}
+
+/* ---------- Servidor ---------- */
+.server { padding: 10px 12px; min-width: 210px; }
+
+.server__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.server__logo {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(140deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #000));
+  box-shadow: 0 0 14px var(--accent-soft);
+}
+.server__name {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.server__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-full);
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chip svg { width: 12px; height: 12px; color: var(--accent); flex: none; }
+.chip b { color: var(--text); font-weight: 700; }
+.chip--job { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.chip__pair { display: inline-flex; align-items: baseline; }
+.chip__pair i { font-style: normal; color: var(--text-faint); }
+
+/* ---------- Dinero ---------- */
+.money {
+  padding: 8px 12px;
+  min-width: 168px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.money__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.money__row.is-hidden { display: none; }
+.money__icon { width: 14px; height: 14px; flex: none; }
+.money__row[data-key="cash"]  .money__icon { color: var(--ok); }
+.money__row[data-key="bank"]  .money__icon { color: var(--info); }
+.money__row[data-key="black"] .money__icon { color: var(--m-stress); }
+.money__value { flex: 1; text-align: right; letter-spacing: .01em; }
+
+.money__delta {
+  position: absolute;
+  right: 0;
+  top: -13px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+}
+.money__delta.is-up   { color: var(--ok); }
+.money__delta.is-down { color: var(--danger); }
+.money__delta.is-live { animation: moneyPop 2.4s var(--ease) forwards; }
+
+@keyframes moneyPop {
+  0%   { opacity: 0; transform: translateY(6px); }
+  14%  { opacity: 1; transform: translateY(0); }
+  74%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+
+/* =====================================================================
+   VOZ
+   ===================================================================== */
+.voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  align-self: flex-start;
+}
+.voice__mic { display: grid; place-items: center; color: var(--text-faint); transition: color .18s var(--ease); }
+.voice__mic svg { width: 13px; height: 13px; }
+.voice.is-talking .voice__mic { color: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+
+.voice__levels { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+.voice__levels i {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--text-faint);
+  transition: background .18s var(--ease), height .18s var(--ease);
+}
+.voice__levels i:nth-child(1) { height: 5px; }
+.voice__levels i:nth-child(2) { height: 8px; }
+.voice__levels i:nth-child(3) { height: 12px; }
+.voice[data-range="1"] .voice__levels i:nth-child(-n+1),
+.voice[data-range="2"] .voice__levels i:nth-child(-n+2),
+.voice[data-range="3"] .voice__levels i:nth-child(-n+3) { background: var(--accent); }
+
+.voice.is-talking .voice__levels i { animation: voiceBounce .55s var(--ease) infinite alternate; }
+.voice.is-talking .voice__levels i:nth-child(2) { animation-delay: .1s; }
+.voice.is-talking .voice__levels i:nth-child(3) { animation-delay: .2s; }
+@keyframes voiceBounce { to { transform: scaleY(.55); } }
+
+.voice__label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.voice__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 7px;
+  border-left: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ok);
+  font-variant-numeric: tabular-nums;
+}
+.voice__radio svg { width: 12px; height: 12px; }
+.voice__radio.is-live { animation: radioPulse 1s ease-in-out infinite; }
+@keyframes radioPulse { 50% { opacity: .45; } }
+
+/* =====================================================================
+   MODO CINE
+   ===================================================================== */
+.cinematic { position: absolute; inset: 0; pointer-events: none; }
+.cinematic i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  background: #000;
+  transition: height .5s var(--ease);
+}
+.cinematic i:first-child { top: 0; }
+.cinematic i:last-child  { bottom: 0; }
+.cinematic.is-active i { height: 11vh; }

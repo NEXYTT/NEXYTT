@@ -1,0 +1,212 @@
+/* =====================================================================
+   HUD DE VEHICULO
+   ===================================================================== */
+
+.vehicle {
+  position: absolute;
+  right: 1.6vw;
+  bottom: 4.2vh;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 10px;
+  align-items: end;
+  transform: scale(var(--hud-scale));
+  transform-origin: bottom right;
+}
+
+/* ---------- Barras laterales (gasolina / motor) ---------- */
+.vehicle__side {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  padding: 12px 12px 10px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+.vbar { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.vbar.is-hidden { display: none; }
+
+.vbar__track {
+  position: relative;
+  width: 9px;
+  height: 76px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .1);
+  overflow: hidden;
+  -webkit-mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
+          mask-image: repeating-linear-gradient(to top, #000 0 5px, transparent 5px 8px);
+}
+.vbar__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  transition: height .3s var(--ease), background .3s var(--ease);
+}
+.vbar[data-metric="fuel"]   .vbar__fill { background: var(--m-fuel);   }
+.vbar[data-metric="engine"] .vbar__fill { background: var(--m-engine); }
+
+.vbar.is-warn   .vbar__fill { background: var(--warn) !important; }
+.vbar.is-danger .vbar__fill { background: var(--danger) !important; animation: arcPulse 1.1s ease-in-out infinite; }
+
+.vbar__icon { width: 15px; height: 15px; color: var(--text-dim); }
+.vbar.is-warn   .vbar__icon { color: var(--warn); }
+.vbar.is-danger .vbar__icon { color: var(--danger); }
+
+/* ---------- Reloj principal ---------- */
+.gauge {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  width: 196px;
+  height: 196px;
+}
+
+.gauge__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.gauge::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .07);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+.arc--speed {
+  stroke: var(--accent);
+  color: var(--accent);
+  stroke-width: 15;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray .12s linear;
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+.arc--rpm {
+  stroke: rgba(255, 255, 255, .32);
+  color: rgba(255, 255, 255, .32);
+  stroke-width: 6;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray .08s linear, stroke .2s var(--ease);
+}
+.arc--rpm.is-redline { stroke: var(--danger); color: var(--danger); filter: drop-shadow(0 0 6px var(--danger)); }
+#arc-rpm-bg   { stroke-width: 6;  stroke: rgba(255, 255, 255, .07); }
+#arc-speed-bg { stroke-width: 15; stroke: rgba(255, 255, 255, .10); }
+
+.gauge__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  pointer-events: none;
+}
+.gauge__speed {
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: .9;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .6);
+}
+.gauge__units {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-top: 3px;
+}
+
+.gauge__gear {
+  position: absolute;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  min-width: 26px;
+  height: 22px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, .07);
+  border: 1px solid var(--border);
+  font-family: 'Rajdhani', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.gauge__gear.is-reverse { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+
+/* ---------- Intermitentes ---------- */
+.gauge__blinker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+  opacity: .25;
+  transition: opacity .12s linear, color .12s linear;
+}
+.gauge__blinker svg { width: 18px; height: 18px; }
+.gauge__blinker--left  { left: 34px;  }
+.gauge__blinker--right { right: 34px; }
+.gauge__blinker.is-on { color: var(--ok); opacity: 1; animation: blink .5s steps(1) infinite; }
+@keyframes blink { 50% { opacity: .12; } }
+
+/* ---------- Pastillas de estado ---------- */
+.vehicle__pills {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-self: end;
+  display: flex;
+  gap: 6px;
+}
+
+.pill {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-faint);
+  transition: color .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
+}
+.pill svg { width: 15px; height: 15px; }
+.pill.is-hidden { display: none; }
+
+.pill.is-on {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 12%, var(--surface));
+}
+.pill.is-alert {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  animation: arcPulse 1s ease-in-out infinite;
+}
+#pill-lights.is-high { color: var(--info); border-color: color-mix(in srgb, var(--info) 45%, transparent); }

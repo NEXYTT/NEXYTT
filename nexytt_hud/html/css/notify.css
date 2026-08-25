@@ -1,0 +1,109 @@
+/* =====================================================================
+   NOTIFICACIONES
+   ===================================================================== */
+
+.notifications {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 320px;
+  pointer-events: none;
+  z-index: 5;
+  transform: scale(var(--hud-scale));
+}
+
+.notifications--top-right     { top: 2.2vh; right: 1.4vw; align-items: flex-end;  transform-origin: top right;    }
+.notifications--top-left      { top: 2.2vh; left: 1.4vw;  align-items: flex-start; transform-origin: top left;     }
+.notifications--top-center    { top: 2.2vh; left: 50%; margin-left: -160px; align-items: center; transform-origin: top center; }
+.notifications--bottom-right  { bottom: 4vh; right: 1.4vw; align-items: flex-end;  flex-direction: column-reverse; transform-origin: bottom right; }
+.notifications--bottom-left   { bottom: 4vh; left: 1.4vw;  align-items: flex-start; flex-direction: column-reverse; transform-origin: bottom left;  }
+
+/* La columna derecha del HUD ya ocupa arriba a la derecha: si las
+   notificaciones van ahi, las bajamos para que no se pisen. */
+.notifications--top-right.has-rail { top: calc(2.2vh + var(--rail-height, 0px) + 8px); }
+
+.note {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  overflow: hidden;
+  animation: noteIn .32s var(--ease) both;
+}
+.note.is-out { animation: noteOut .26s var(--ease) both; }
+
+@keyframes noteIn  { from { opacity: 0; transform: translateX(24px) scale(.96); } }
+@keyframes noteOut { to   { opacity: 0; transform: translateX(24px) scale(.96); } }
+
+.notifications--top-left  .note,
+.notifications--bottom-left .note { animation-name: noteInLeft; }
+.notifications--top-left  .note.is-out,
+.notifications--bottom-left .note.is-out { animation-name: noteOutLeft; }
+@keyframes noteInLeft  { from { opacity: 0; transform: translateX(-24px) scale(.96); } }
+@keyframes noteOutLeft { to   { opacity: 0; transform: translateX(-24px) scale(.96); } }
+
+.note::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--note-color, var(--info));
+}
+
+.note__icon {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--note-color, var(--info));
+  background: color-mix(in srgb, var(--note-color, var(--info)) 15%, transparent);
+}
+.note__icon svg { width: 15px; height: 15px; }
+
+.note__body { flex: 1; min-width: 0; }
+.note__title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--note-color, var(--info));
+  margin-bottom: 2px;
+}
+.note__text {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.38;
+  color: var(--text);
+  word-wrap: break-word;
+}
+
+.note__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--note-color, var(--info));
+  opacity: .55;
+  transform-origin: left center;
+  animation: noteBar linear forwards;
+}
+@keyframes noteBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+.note--success { --note-color: var(--ok);     }
+.note--error   { --note-color: var(--danger); }
+.note--warning { --note-color: var(--warn);   }
+.note--info    { --note-color: var(--info);   }

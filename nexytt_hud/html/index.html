@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXYTT HUD</title>
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/status.css">
+<link rel="stylesheet" href="css/vehicle.css">
+<link rel="stylesheet" href="css/notify.css">
+<link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+
+<!-- ================= SPRITE DE ICONOS ================= -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+    <symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="ic-food" viewBox="0 0 24 24"><path d="M6 2v8a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2M8 2v20M17 2c-1.7 1.3-2.5 3.3-2.5 5.5S15.3 12 17 13v9"/></symbol>
+    <symbol id="ic-water" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></symbol>
+    <symbol id="ic-stress" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="ic-oxygen" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
+    <symbol id="ic-stamina" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="ic-fuel" viewBox="0 0 24 24"><path d="M3 22h12V4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v18zM3 10h12M15 8l3 3v7a2 2 0 0 0 4 0V9l-3-3"/></symbol>
+    <symbol id="ic-engine" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="ic-belt" viewBox="0 0 24 24"><path d="M7 10h10a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2z"/><path d="M9 10V7a3 3 0 0 1 6 0v3"/></symbol>
+    <symbol id="ic-light" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="ic-cruise" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-3"/><path d="M12 12v5"/></symbol>
+    <symbol id="ic-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="ic-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+    <symbol id="ic-mic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></symbol>
+    <symbol id="ic-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14M7.76 16.24a6 6 0 0 1 0-8.49M16.24 7.76a6 6 0 0 1 0 8.49M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol>
+    <symbol id="ic-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="ic-id" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5 17c.8-1.6 2.3-2.5 4-2.5s3.2.9 4 2.5M15 9h4M15 13h4"/></symbol>
+    <symbol id="ic-cash" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+    <symbol id="ic-bank" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></symbol>
+    <symbol id="ic-black" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="ic-job" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+    <symbol id="ic-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="ic-x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+    <symbol id="ic-warn" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="ic-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+    <symbol id="ic-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.4.65.73.85.33.2.71.3 1.09.3H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+    <symbol id="ic-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></symbol>
+    <symbol id="ic-map" viewBox="0 0 24 24"><path d="M1 6l7-3 8 3 7-3v15l-7 3-8-3-7 3V6z"/><path d="M8 3v15M16 6v15"/></symbol>
+    <symbol id="ic-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+    <symbol id="ic-car" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/><path d="M9.5 17h5"/></symbol>
+    <symbol id="ic-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></symbol>
+  </defs>
+</svg>
+
+<!-- ================= HUD ================= -->
+<div id="hud" class="hud is-hidden">
+
+  <!-- Brujula -->
+  <section id="compass" class="compass is-hidden">
+    <div class="compass__bar">
+      <div class="compass__viewport"><div class="compass__track" id="compass-track"></div></div>
+      <div class="compass__needle"></div>
+      <div class="compass__heading" id="compass-heading">0°</div>
+    </div>
+    <div class="compass__place">
+      <span class="compass__street" id="compass-street"></span>
+      <span class="compass__sep" id="compass-sep"></span>
+      <span class="compass__zone" id="compass-zone"></span>
+    </div>
+  </section>
+
+  <!-- Columna derecha: servidor + dinero -->
+  <aside class="rail">
+    <section id="server" class="panel server is-hidden">
+      <header class="server__head">
+        <span class="server__logo" id="server-logo">N</span>
+        <span class="server__name" id="server-name">NEXYTT RP</span>
+      </header>
+      <div class="server__chips" id="server-chips"></div>
+    </section>
+
+    <section id="money" class="panel money is-hidden">
+      <div class="money__row" data-key="cash">
+        <svg class="money__icon"><use href="#ic-cash"/></svg>
+        <span class="money__value" id="money-cash">0</span>
+        <span class="money__delta" id="money-cash-delta"></span>
+      </div>
+      <div class="money__row" data-key="bank">
+        <svg class="money__icon"><use href="#ic-bank"/></svg>
+        <span class="money__value" id="money-bank">0</span>
+        <span class="money__delta" id="money-bank-delta"></span>
+      </div>
+      <div class="money__row" data-key="black">
+        <svg class="money__icon"><use href="#ic-black"/></svg>
+        <span class="money__value" id="money-black">0</span>
+        <span class="money__delta" id="money-black-delta"></span>
+      </div>
+    </section>
+  </aside>
+
+  <!-- Notificaciones -->
+  <section id="notifications" class="notifications notifications--top-right"></section>
+
+  <!-- Estado del jugador -->
+  <section id="status" class="status status--ring">
+
+    <div class="status__ring-wrap">
+      <svg class="status__rings" viewBox="0 0 240 240" id="status-rings">
+        <defs>
+          <mask id="seg-mask-health">
+            <path id="mask-health" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt"
+                  stroke-dasharray="1.35 0.75" pathLength="100"/>
+          </mask>
+          <mask id="seg-mask-armor">
+            <path id="mask-armor" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="butt"
+                  stroke-dasharray="1.35 0.75" pathLength="100"/>
+          </mask>
+        </defs>
+
+        <g mask="url(#seg-mask-health)">
+          <path class="arc arc--bg"   id="arc-health-bg"   pathLength="100"/>
+          <path class="arc arc--fill" id="arc-health-fill" pathLength="100" data-metric="health"/>
+        </g>
+        <g mask="url(#seg-mask-armor)">
+          <path class="arc arc--bg"   id="arc-armor-bg"   pathLength="100"/>
+          <path class="arc arc--fill" id="arc-armor-fill" pathLength="100" data-metric="armor"/>
+        </g>
+      </svg>
+
+      <div class="status__needs" id="status-needs"></div>
+
+    </div>
+
+    <div class="status__caps">
+      <span class="cap cap--health" id="cap-health">
+        <svg><use href="#ic-heart"/></svg><b>100</b>
+      </span>
+      <span class="cap cap--armor is-hidden" id="cap-armor">
+        <svg><use href="#ic-shield"/></svg><b>0</b>
+      </span>
+    </div>
+
+    <div class="status__bars" id="status-bars"></div>
+
+    <div id="voice" class="voice is-hidden">
+      <div class="voice__mic"><svg><use href="#ic-mic"/></svg></div>
+      <div class="voice__levels"><i></i><i></i><i></i></div>
+      <span class="voice__label" id="voice-label">Normal</span>
+      <span class="voice__radio is-hidden" id="voice-radio"><svg><use href="#ic-radio"/></svg><b>0</b></span>
+    </div>
+  </section>
+
+  <!-- Vehiculo -->
+  <section id="vehicle" class="vehicle is-hidden">
+    <div class="vehicle__side">
+      <div class="vbar" id="vbar-fuel" data-metric="fuel">
+        <div class="vbar__track"><div class="vbar__fill"></div></div>
+        <svg class="vbar__icon"><use href="#ic-fuel"/></svg>
+      </div>
+      <div class="vbar" id="vbar-engine" data-metric="engine">
+        <div class="vbar__track"><div class="vbar__fill"></div></div>
+        <svg class="vbar__icon"><use href="#ic-engine"/></svg>
+      </div>
+    </div>
+
+    <div class="gauge">
+      <svg class="gauge__svg" viewBox="0 0 220 220">
+        <defs>
+          <mask id="seg-mask-gauge">
+            <path id="mask-gauge" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="butt"
+                  stroke-dasharray="1.1 0.7" pathLength="100"/>
+          </mask>
+          <mask id="seg-mask-rpm">
+            <path id="mask-rpm" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="butt"
+                  stroke-dasharray="0.9 0.75" pathLength="100"/>
+          </mask>
+        </defs>
+
+        <g mask="url(#seg-mask-gauge)">
+          <path class="arc arc--bg"    id="arc-speed-bg"   pathLength="100"/>
+          <path class="arc arc--speed" id="arc-speed-fill" pathLength="100"/>
+        </g>
+        <g mask="url(#seg-mask-rpm)">
+          <path class="arc arc--bg"  id="arc-rpm-bg"   pathLength="100"/>
+          <path class="arc arc--rpm" id="arc-rpm-fill" pathLength="100"/>
+        </g>
+      </svg>
+
+      <div class="gauge__center">
+        <span class="gauge__speed" id="veh-speed">0</span>
+        <span class="gauge__units" id="veh-units">km/h</span>
+      </div>
+      <div class="gauge__gear" id="veh-gear">N</div>
+
+      <div class="gauge__blinker gauge__blinker--left"  id="veh-left"><svg><use href="#ic-left"/></svg></div>
+      <div class="gauge__blinker gauge__blinker--right" id="veh-right"><svg><use href="#ic-right"/></svg></div>
+    </div>
+
+    <div class="vehicle__pills">
+      <span class="pill" id="pill-belt"><svg><use href="#ic-belt"/></svg></span>
+      <span class="pill" id="pill-lights"><svg><use href="#ic-light"/></svg></span>
+      <span class="pill" id="pill-cruise"><svg><use href="#ic-cruise"/></svg></span>
+    </div>
+  </section>
+
+  <div class="cinematic" id="cinematic"><i></i><i></i></div>
+</div>
+
+<!-- ================= AJUSTES ================= -->
+<div id="settings" class="settings is-hidden">
+  <div class="settings__backdrop" data-close></div>
+
+  <div class="settings__panel" role="dialog" aria-modal="true" aria-label="Ajustes del HUD">
+    <header class="settings__head">
+      <div class="settings__title">
+        <svg class="settings__title-icon"><use href="#ic-gear"/></svg>
+        <div>
+          <h1 id="settings-title">Ajustes del HUD</h1>
+          <p id="settings-sub">nexytt_hud · v1.0.0</p>
+        </div>
+      </div>
+      <button class="settings__close" data-close aria-label="Cerrar">
+        <svg><use href="#ic-x"/></svg>
+      </button>
+    </header>
+
+    <div class="settings__body">
+      <nav class="settings__nav" id="settings-nav"></nav>
+      <div class="settings__content" id="settings-content"></div>
+    </div>
+
+    <footer class="settings__foot">
+      <span class="settings__hint" id="settings-hint"></span>
+      <div class="settings__actions">
+        <button class="btn btn--ghost" id="btn-reset">Restablecer</button>
+        <button class="btn btn--primary" id="btn-save">Guardar</button>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<script src="js/utils.js"></script>
+<script src="js/status.js"></script>
+<script src="js/vehicle.js"></script>
+<script src="js/compass.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/notify.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
