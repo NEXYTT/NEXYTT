@@ -129,7 +129,47 @@ async function inlineStyles(html, pageDir) {
   return out;
 }
 
-export async function bundlePage(pagePath) {
+/**
+ * Runtime for preview builds.
+ *
+ * A page inside a `srcdoc` frame has no query string and does not own its
+ * history, but the storefront reads `?slug=` and `?ref=`, writes filters back
+ * with `replaceState`, and navigates with `location.href`. Rather than weaken
+ * the real pages for the sake of a preview, preview builds rewrite those three
+ * operations to go through this object, and the shell supplies the query.
+ */
+const PREVIEW_RUNTIME = `
+const __nx = (() => {
+  let search = "";
+  try { search = window.frameElement?.dataset.nxSearch ?? ""; } catch { search = ""; }
+  return {
+    search: () => search,
+    // Keep the in-page query coherent without touching a history this frame
+    // does not own. A bare fragment leaves the query alone, as it would in a
+    // real navigation.
+    replaceState(_state, _title, url) {
+      const next = String(url ?? "");
+      if (next.startsWith("#")) return;
+      const q = next.indexOf("?");
+      search = q >= 0 ? next.slice(q) : "";
+    },
+    navigate(url) {
+      try { window.parent.__nxGo(String(url)); } catch { /* not in the shell */ }
+    },
+  };
+})();
+`;
+
+/** Rewrites applied only to preview builds. Each one is a whole operation. */
+const PREVIEW_REWRITES = [
+  [/location\.search/g, "__nx.search()"],
+  [/history\.replaceState\(/g, "__nx.replaceState("],
+  [/location\.assign\(/g, "__nx.navigate("],
+  // `location.href = <expr>;` on one line — the only form this project uses.
+  [/location\.href\s*=\s*([^;\n]+);/g, "__nx.navigate($1);"],
+];
+
+export async function bundlePage(pagePath, { preview = false } = {}) {
   const absolutePage = resolve(ROOT, pagePath);
   const pageDir = dirname(absolutePage);
   let html = await readFile(absolutePage, "utf8");
@@ -144,8 +184,14 @@ export async function bundlePage(pagePath) {
 
   const body = [...modules.entries()]
     .map(([id, module]) => {
+      let code = module.code;
+      if (preview) {
+        for (const [pattern, replacement] of PREVIEW_REWRITES) {
+          code = code.replace(pattern, replacement);
+        }
+      }
       const exportsObject = module.exports.length ? `{ ${module.exports.join(", ")} }` : "{}";
-      return `__def(${JSON.stringify(id)}, function (__req) {\n${module.code}\nreturn ${exportsObject};\n});`;
+      return `__def(${JSON.stringify(id)}, function (__req) {\n${code}\nreturn ${exportsObject};\n});`;
     })
     .join("\n\n");
 
@@ -160,7 +206,7 @@ function __req(id) {
 function __def(id, factory) { __registry[id] = factory(__req); }
 `;
 
-  const inlineScript = `<script type="module">\n${runtime}\n${body}\n</script>`;
+  const inlineScript = `<script type="module">\n${runtime}\n${preview ? PREVIEW_RUNTIME : ""}\n${body}\n</script>`;
   // Function replacement for the same reason as above — the bundled source is
   // dense with `$`, and `$'` alone would splice the rest of the document into
   // the middle of the script.
@@ -170,8 +216,8 @@ function __def(id, factory) { __registry[id] = factory(__req); }
 if (import.meta.url === `file://${process.argv[1]}`) {
   const target = process.argv[2];
   if (!target) {
-    console.error("uso: node tools/bundle.mjs <pagina.html>");
+    console.error("uso: node tools/bundle.mjs <pagina.html> [--preview]");
     process.exit(1);
   }
-  process.stdout.write(await bundlePage(target));
+  process.stdout.write(await bundlePage(target, { preview: process.argv.includes("--preview") }));
 }

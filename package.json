@@ -14,7 +14,7 @@
     "test:contrast": "node tests/contrast.mjs",
     "test:casino": "node tests/casino-e2e.mjs",
     "test:robustness": "node tests/robustness.mjs",
-    "preview": "node tools/build-artifact.mjs > casino-preview.html"
+    "preview": "node tools/build-artifact.mjs casino > casino-preview.html && node tools/build-artifact.mjs shop > shop-preview.html"
   },
   "engines": {
     "node": ">=22"
